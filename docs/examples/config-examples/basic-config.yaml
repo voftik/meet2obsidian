@@ -1,0 +1,18 @@
+Basic meet2obsidian configuration example
+paths:
+video_directory: "/Users/username/Documents/meet_records"
+obsidian_vault: "/Users/username/Documents/Obsidian/MainVault"
+api:
+rev_ai:
+job_timeout: 3600
+max_retries: 3
+claude:
+model: "claude-3-opus-20240229"
+temperature: 0.1
+processing:
+delete_video_files: true
+delete_audio_files: true
+system:
+autostart: true
+loglevel: "info"
+notifications: true
