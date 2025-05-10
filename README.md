@@ -4,8 +4,8 @@ Automated tool for transcribing meeting recordings and integrating them into you
 
 <p align="center">
   <img src="https://img.shields.io/github/license/voftik/meet2obsidian?style=flat-square" alt="License">
-  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey?style=flat-square" alt="Platform">
-  <img src="https://img.shields.io/badge/python-3.8%2B-blue?style=flat-square" alt="Python Version">
+  <img src="https://img.shields.io/badge/platform-macOS-lightgrey?style=flat-square" alt="Platform">
+  <img src="https://img.shields.io/badge/python-3.9%2B-blue?style=flat-square" alt="Python Version">
 </p>
 
 ## 📝 Description
@@ -26,6 +26,7 @@ Meet2Obsidian automatically processes meeting recordings, converts them to text,
 - **AI-Powered Content Analysis**: Leverages Claude API to analyze transcripts and extract valuable insights
 - **File Management**: Automatically cleans up processed files from your meetings directory
 - **Customizable Prompts**: Configure how AI analyzes your meetings with editable prompt templates
+- **Secure Storage**: API keys are stored securely using macOS Keychain
 
 ## 🔧 How It Works
 
@@ -50,22 +51,41 @@ Meet2Obsidian automatically processes meeting recordings, converts them to text,
 
 ### Prerequisites
 
+- macOS system (currently only macOS is supported)
+- Python 3.9 or higher
+- FFmpeg (installed via Homebrew)
 - Obsidian installed on your computer
 - Rev.ai account for transcription services
 - Anthropic Claude API key for content analysis
 
 ### Installation
 
+#### Development Installation
+
 ```bash
 # Clone the repository
 git clone https://github.com/voftik/meet2obsidian.git
 cd meet2obsidian
 
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the application
-python main.py
+# Install package in development mode
+pip install -e .
+```
+
+#### User Installation (Once Released)
+
+```bash
+# Install via Homebrew
+brew install voftik/tools/meet2obsidian
+
+# Or install via pip
+pip install meet2obsidian
 ```
 
 ### Initial Setup
@@ -76,14 +96,30 @@ On first launch, Meet2Obsidian will ask for and securely store:
 - Anthropic Claude API key
 - Preferred configuration options
 
-These settings are stored encrypted in a local configuration file.
+These settings are stored securely in macOS Keychain.
+
+### Usage
+
+```bash
+# Start the service
+meet2obsidian start
+
+# Check status
+meet2obsidian status
+
+# Stop the service
+meet2obsidian stop
+
+# Configure settings
+meet2obsidian config
+```
 
 ## 🔐 Security and Privacy
 
-- API keys are stored securely using environment variables or encrypted configuration
+- API keys are stored securely using macOS Keychain
 - All processing happens locally on your machine except for API calls
 - No meeting content is stored on external servers beyond necessary API processing
-- Options to work with locally deployed transcription models for complete privacy
+- Temporary files are securely managed and cleaned up after processing
 
 ## 🛠️ Advanced Configuration
 
@@ -92,6 +128,7 @@ Meet2Obsidian offers several customization options:
 - **Custom Prompts**: Edit AI analysis prompts for different meeting types
 - **Templating**: Customize Obsidian note templates
 - **Scheduling**: Set up automatic processing at specific times
+- **Caching**: Efficient caching system for optimizing API usage and improving performance
 
 ## 📋 Future Roadmap
 
@@ -102,31 +139,31 @@ Meet2Obsidian offers several customization options:
   - Creates bidirectional links with related content
   - Builds semantic connections across your knowledge base
 
-## 🔍 Potential Challenges and Solutions
+## 🔍 Technical Features
 
-### Handling Large Files
-For lengthy recordings, the tool implements chunked processing to manage memory efficiently.
+### Local Processing
+Audio extraction and file management happen locally, minimizing bandwidth usage.
 
-### Transcription Accuracy
-For technical discussions or poor audio quality, the tool offers transcript editing capabilities before AI analysis.
+### Robust Error Handling
+The tool automatically recovers from interruptions and API failures.
 
-### API Rate Limits
-Built-in rate limiting and queuing system prevents API throttling during batch processing.
+### Efficient Resource Usage
+Optimized to minimize CPU and memory usage while running in the background.
 
-### Meeting Privacy
-Option to process sensitive meetings with local models only, though with reduced analysis capabilities.
+### Structured Logging
+Comprehensive logging system for troubleshooting and monitoring.
 
 ## 📄 License
 
-This project is licensed under [LICENSE NAME] - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📞 Contact
 
-If you have questions or suggestions, please [create an issue](https://github.com/voftik/meet2obsidian/issues/new) in this repository or contact me directly.
+If you have questions or suggestions, please [create an issue](https://github.com/voftik/meet2obsidian/issues/new) in this repository.
 
 ---
 
