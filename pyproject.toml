@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "meet2obsidian"
+version = "0.1.0"
+description = "Automated tool for transcribing meeting recordings and creating Obsidian notes"
+readme = "README.md"
+authors = [
+    {name = "voftik", email = "voftik@gmail.com"}
+]
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3.9",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
+    "Intended Audience :: End Users/Desktop",
+    "Topic :: Utilities",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "ffmpeg-python>=0.2.0",
+    "rev-ai>=2.19.0",
+    "anthropic>=0.3.0",
+    "watchdog>=2.1.9",
+    "structlog>=22.1.0",
+    "keyring>=23.5.0",
+    "commentjson>=0.9.0",
+    "click>=8.1.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-mock>=3.7.0",
+    "responses>=0.20.0",
+    "black>=22.3.0",
+    "flake8>=4.0.1",
+]
+
+[project.scripts]
+meet2obsidian = "meet2obsidian.cli:main"
+
+[tool.setuptools]
+packages = ["meet2obsidian"]
+
+[tool.black]
+line-length = 88
+target-version = ["py39"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
