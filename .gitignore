@@ -221,3 +221,4 @@ tests/data/*.m4a
 
 # Obsidian files
 .obsidian/
+**/.claude/settings.local.json
