@@ -102,16 +102,35 @@ These settings are stored securely in macOS Keychain.
 
 ```bash
 # Start the service
-meet2obsidian start
+meet2obsidian run
 
 # Check status
-meet2obsidian status
+meet2obsidian monitor status
 
 # Stop the service
-meet2obsidian stop
+meet2obsidian monitor stop
 
 # Configure settings
 meet2obsidian config
+
+# View logs
+meet2obsidian logs show
+
+# Process a single file
+meet2obsidian process /path/to/meeting.mp4
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+./tests/run_tests.py
+
+# Run specific tests
+./tests/run_tests.py tests/unit/test_logging.py
+
+# Alternative method with pytest directly
+PYTHONPATH=. pytest tests/
 ```
 
 ## 🔐 Security and Privacy
@@ -132,6 +151,12 @@ Meet2Obsidian offers several customization options:
 
 ## 📋 Future Roadmap
 
+### Recently Completed
+- [x] Implementation of structured logging system with JSON formatting and rotation
+- [x] Comprehensive testing suite for logging functionality
+- [x] CLI commands for log management and viewing
+
+### Coming Soon
 - [ ] Support for additional video/audio formats
 - [ ] Integration with alternative transcription services
 - [ ] Cross-linking between notes based on content context using AI relevance agent
@@ -151,7 +176,12 @@ The tool automatically recovers from interruptions and API failures.
 Optimized to minimize CPU and memory usage while running in the background.
 
 ### Structured Logging
-Comprehensive logging system for troubleshooting and monitoring.
+Comprehensive logging system with structlog for JSON-formatted logs, log rotation, and contextual logging to simplify troubleshooting and monitoring. Features include:
+- Multiple logging levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+- Log file rotation to manage disk space
+- Structured JSON format for machine readability
+- Context binding for tracing related log events
+- CLI commands for viewing and managing logs
 
 ## 📄 License
 

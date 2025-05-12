@@ -15,6 +15,35 @@ Welcome to the meet2obsidian project documentation! Here you'll find all the nec
 
 meet2obsidian is a command-line utility for macOS designed to automatically process meeting video recordings, transcribe them, and create structured notes in Obsidian. The system works in the background, monitoring a specified directory for new video files and automatically processing them.
 
+## Project Status
+
+Current implemented features:
+
+- Basic infrastructure setup
+- Configuration management
+- API key management
+- Structured logging system
+
+### Recently Completed
+
+- **Epic 7: Tests for the logging module** - Created comprehensive unit tests for the logging functionality
+- **Epic 8: Implementation of logging module** - Implemented structured logging with structlog, file rotation, and various logging levels
+
+### Coming Soon
+
+- Audio extraction from video files
+- Integration with Rev.ai API for transcription
+- Integration with Claude API for notes generation
+- Obsidian note creation and formatting
+
 ## Quick Start
 
-For a quick start, see the installation guide in the user documentation section.
+For a quick start, see the [installation guide](user/getting-started/installation.md) in the user documentation section.
+
+## Key Features
+
+- **Automatic processing** of meeting recordings
+- **Structured logging** with JSON format for better diagnostics
+- **Flexible configuration** through YAML config files
+- **Command-line interface** for easy operation
+- **API integration** with Rev.ai and Claude
