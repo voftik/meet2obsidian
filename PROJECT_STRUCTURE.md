@@ -82,6 +82,7 @@ meet2obsidian/
 │   │   ├── completion.py
 │   │   ├── config_command.py
 │   │   ├── logs_command.py
+│   │   ├── process_command.py
 │   │   ├── service_command.py
 │   │   └── status_command.py
 │   ├── config.py
@@ -263,6 +264,7 @@ graph TD
     Meet2ObsidianCLICommands --> Meet2ObsidianCLICommandsStatus["status_command.py"]
     Meet2ObsidianCLICommands --> Meet2ObsidianCLICommandsConfig["config_command.py"]
     Meet2ObsidianCLICommands --> Meet2ObsidianCLICommandsCompletion["completion.py"]
+    Meet2ObsidianCLICommands --> Meet2ObsidianCLICommandsProcess["process_command.py"]
 
     %% API Package
     Meet2ObsidianAPI --> Meet2ObsidianAPIInit["__init__.py"]
@@ -347,6 +349,7 @@ graph TD
     TestsUnit --> TestsUnitProcessingQueueProcess["test_processing_queue_process.py"]
     TestsUnit --> TestsUnitProcessingQueueRecovery["test_processing_queue_recovery.py"]
     TestsUnit --> TestsUnitProcessingQueuePriority["test_processing_queue_priority.py"]
+    TestsUnit --> TestsUnitProcessCommand["test_process_command.py"]
 
     %% Test Fixtures
     TestsFixtures --> TestsFixturesConfig["test_config.json"]
@@ -432,6 +435,7 @@ Key functional components:
   - `cli_commands/logs_command.py`: Log viewing and management ✅
   - `cli_commands/apikeys_command.py`: API key management ✅
   - `cli_commands/completion.py`: Shell completion for CLI commands ✅
+  - `cli_commands/process_command.py`: Processing queue management commands ✅
 - **Utility Scripts**:
   - `scripts/check_videos.py`: Video validation tool ✅
   - `scripts/setup_api_keys.py`: API key setup utility ✅
@@ -545,4 +549,14 @@ Key functional components:
   - ✅ Task 11: Create integration tests for the processing pipeline
   - ✅ Task 12: Create simplified test suite for reliable integration testing
 
-Last Updated: 2025-05-14
+- **Epic 20**: Processing queue management system integration ✅ (2025-05-16)
+  - ✅ Task 1: Integrate ProcessingQueue with ApplicationManager
+  - ✅ Task 2: Add support for file queue management in core.py
+  - ✅ Task 3: Extend ApplicationManager API to include queue management methods
+  - ✅ Task 4: Create CLI commands for processing queue management
+  - ✅ Task 5: Implement queue status display in various formats
+  - ✅ Task 6: Add commands for file addition, retry, and clean-up
+  - ✅ Task 7: Create unit tests for queue management commands
+  - ✅ Task 8: Update project documentation
+
+Last Updated: 2025-05-16

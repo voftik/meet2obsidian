@@ -101,6 +101,46 @@ meet2obsidian logs show --log-file /path/to/custom.log
 meet2obsidian logs clear
 ```
 
+## Команды управления очередью обработки
+
+Meet2Obsidian предоставляет команды для управления очередью обработки файлов.
+
+### Просмотр статуса очереди
+
+```bash
+# Показать статус очереди обработки
+meet2obsidian process status
+
+# Показать подробную информацию о файлах в очереди
+meet2obsidian process status --detailed
+
+# Вывод статуса в формате JSON
+meet2obsidian process status --format json
+
+# Вывод статуса в текстовом формате
+meet2obsidian process status --format text
+```
+
+### Добавление файлов в очередь
+
+```bash
+# Добавить файл в очередь обработки
+meet2obsidian process add /path/to/video.mp4
+
+# Добавить файл с высоким приоритетом
+meet2obsidian process add /path/to/important_video.mp4 --priority 10
+```
+
+### Управление обработкой файлов
+
+```bash
+# Повторная обработка файлов с ошибками
+meet2obsidian process retry
+
+# Очистка завершенных файлов из очереди
+meet2obsidian process clear
+```
+
 ## Команды управления API-ключами
 
 Meet2Obsidian предоставляет команды для управления API-ключами, используемыми для доступа к внешним сервисам.
@@ -210,6 +250,9 @@ meet2obsidian service start --autostart
 
 # Проверка статуса
 meet2obsidian status --detailed
+
+# Проверка очереди обработки
+meet2obsidian process status --detailed
 ```
 
 ### Диагностика проблем
@@ -220,6 +263,12 @@ meet2obsidian apikeys list
 
 # Просмотр логов ошибок
 meet2obsidian logs show --level error --count 50
+
+# Проверка файлов с ошибками обработки
+meet2obsidian process status --detailed
+
+# Повторная обработка файлов с ошибками
+meet2obsidian process retry
 
 # Проверка конфигурации
 meet2obsidian config show

@@ -16,6 +16,7 @@ import logging
 from typing import Dict, List, Any, Optional, Callable, Union, Tuple
 
 from meet2obsidian.utils.logging import get_logger
+from meet2obsidian.processing import ProcessingQueue, ProcessingState, ProcessingStatus, FileProcessor
 
 
 class ApplicationManager:
@@ -49,8 +50,9 @@ class ApplicationManager:
         
         # Placeholder for components
         # Important: We don't set self.file_monitor here for test compatibility
-        # Only define config_manager
+        # Only define config_manager and processing_queue
         self.config_manager = None
+        self.processing_queue = None
         
         # Flag for test mode operation
         self._in_test_mode = False
@@ -193,11 +195,27 @@ class ApplicationManager:
         """
         status = {
             "running": self.is_running(),
-            "processed_files": self._processed_files,
-            "pending_files": self._pending_files,
-            "active_jobs": self._active_jobs.copy(),
-            "last_errors": self._last_errors.copy()
         }
+        
+        # Add processing queue stats if available
+        if self.processing_queue:
+            queue_stats = self.processing_queue.get_stats()
+            status.update({
+                "processed_files": queue_stats.get("completed", 0),
+                "pending_files": queue_stats.get("pending", 0),
+                "processing_files": queue_stats.get("processing", 0),
+                "error_files": queue_stats.get("error", 0),
+                "failed_files": queue_stats.get("failed", 0),
+                "total_files": queue_stats.get("total", 0)
+            })
+        else:
+            # Fallback for backward compatibility
+            status.update({
+                "processed_files": self._processed_files,
+                "pending_files": self._pending_files,
+                "active_jobs": self._active_jobs.copy(),
+                "last_errors": self._last_errors.copy()
+            })
         
         if status["running"] and self._start_time:
             # Calculate uptime
@@ -219,6 +237,11 @@ class ApplicationManager:
                 status["components"]["config_manager"] = "active"
             else:
                 status["components"]["config_manager"] = "inactive"
+                
+            if hasattr(self, 'processing_queue') and self.processing_queue:
+                status["components"]["processing_queue"] = "active"
+            else:
+                status["components"]["processing_queue"] = "inactive"
         
         return status
     
@@ -259,6 +282,68 @@ class ApplicationManager:
                 # Create and initialize ConfigManager
                 self.config_manager = ConfigManager()
                 self.logger.info("Configuration loaded successfully")
+                
+                # Get application support directory
+                app_support_dir = os.path.dirname(self._pid_file)
+                
+                # Create and initialize ProcessingQueue
+                try:
+                    # Get processing configuration
+                    max_concurrent = self.config_manager.get_value(
+                        "processing.max_concurrent_files", default=2)
+                    max_retries = self.config_manager.get_value(
+                        "processing.max_retries", default=3)
+                    
+                    # Create processing directory if it doesn't exist
+                    processing_dir = os.path.join(app_support_dir, "processing")
+                    os.makedirs(processing_dir, exist_ok=True)
+                    
+                    # Create processor function
+                    def process_file(file_path, metadata):
+                        """Process a video file."""
+                        try:
+                            # This is a placeholder for actual processing.
+                            # In a real implementation, this would trigger audio extraction,
+                            # transcription, and note generation.
+                            
+                            # Generate a job ID
+                            job_id = f"job_{os.path.basename(file_path)}_{int(time.time())}"
+                            
+                            # Add job to active jobs for backwards compatibility
+                            job_info = {
+                                "file": file_path,
+                                "stage": "processing",
+                                "progress": "50%"
+                            }
+                            self.add_job(job_id, job_info)
+                            
+                            # Add a small delay to simulate processing
+                            time.sleep(1)
+                            
+                            # Mark job as completed for backwards compatibility
+                            self.complete_job(job_id, success=True)
+                            
+                            self.logger.info(f"Processed file: {file_path}")
+                            return True
+                        except Exception as e:
+                            self.logger.error(f"Error processing file {file_path}: {str(e)}")
+                            return False
+                    
+                    # Create processor
+                    processor = FileProcessor(process_file)
+                    
+                    # Create queue
+                    persistence_file = os.path.join(processing_dir, "queue_state.json")
+                    self.processing_queue = ProcessingQueue(
+                        processor=processor,
+                        persistence_dir=processing_dir,
+                        max_concurrent=max_concurrent,
+                        auto_start=False  # Don't start until we've initialized everything
+                    )
+                    
+                    self.logger.info("Processing queue initialized")
+                except Exception as e:
+                    self.logger.warning(f"Error initializing processing queue: {str(e)}")
                 
                 # Extension: if video directory is configured
                 video_dir = self.config_manager.get_value("paths.video_directory", default="")
@@ -304,6 +389,12 @@ class ApplicationManager:
                     except Exception as e:
                         self.logger.error(f"Error initializing FileMonitor: {str(e)}")
                         return False
+                
+                # Start processing queue after all components are initialized
+                if self.processing_queue:
+                    self.processing_queue.start()
+                    self.logger.info("Processing queue started")
+                
             except ImportError as e:
                 self.logger.warning(f"Could not load configuration module: {str(e)}")
             except Exception as e:
@@ -332,6 +423,14 @@ class ApplicationManager:
             if not self._components_initialized:
                 self.logger.warning("Components were not initialized")
                 return True
+            
+            # Stop the ProcessingQueue if it's running
+            if hasattr(self, 'processing_queue') and self.processing_queue:
+                try:
+                    self.processing_queue.stop(wait=True)
+                    self.logger.info("Processing queue stopped")
+                except Exception as e:
+                    self.logger.error(f"Error stopping processing queue: {str(e)}")
             
             # Stop the FileMonitor if it's running
             if hasattr(self, 'file_monitor') and self.file_monitor:
@@ -647,28 +746,104 @@ class ApplicationManager:
         Handle detection of a new file by the file monitor.
 
         This method is called when a new file is detected by the FileMonitor.
-        It should start the processing pipeline for the file.
+        It adds the file to the processing queue.
 
         Args:
             file_path: Absolute path to the new file
         """
         try:
-            self.logger.info(f"Processing new file: {os.path.basename(file_path)}")
+            self.logger.info(f"New file detected: {os.path.basename(file_path)}")
+            
+            # Add the file to the processing queue if available
+            if hasattr(self, 'processing_queue') and self.processing_queue:
+                try:
+                    # Add the file to the queue with metadata
+                    metadata = {
+                        "detected_at": datetime.datetime.now().isoformat(),
+                        "detector": "file_monitor"
+                    }
+                    self.processing_queue.add_file(file_path, metadata=metadata)
+                    self.logger.info(f"Added file to processing queue: {os.path.basename(file_path)}")
+                except ValueError as e:
+                    # File already in queue - this is normal in some situations
+                    self.logger.warning(f"File already in queue: {os.path.basename(file_path)}")
+                except Exception as e:
+                    self.logger.error(f"Error adding file to processing queue: {str(e)}")
+            else:
+                # Fallback to legacy job tracking for backwards compatibility
+                # Create a job ID based on file name and timestamp
+                job_id = f"job_{os.path.basename(file_path)}_{int(time.time())}"
 
-            # Create a job ID based on file name and timestamp
-            job_id = f"job_{os.path.basename(file_path)}_{int(time.time())}"
-
-            # Add job to active jobs
-            job_info = {
-                "file": file_path,
-                "stage": "detected",
-                "progress": "0%"
-            }
-            self.add_job(job_id, job_info)
-
-            # Placeholder: Eventually this would trigger the full processing pipeline
-            # For now, we just log that we received the file
-            self.logger.info(f"Created job {job_id} for file: {file_path}")
+                # Add job to active jobs
+                job_info = {
+                    "file": file_path,
+                    "stage": "detected",
+                    "progress": "0%"
+                }
+                self.add_job(job_id, job_info)
+                self.logger.info(f"Created job {job_id} for file: {file_path}")
 
         except Exception as e:
             self.logger.error(f"Error handling new file {file_path}: {str(e)}")
+    
+    def get_processing_queue_status(self) -> Dict[str, Any]:
+        """
+        Get detailed status of the processing queue.
+        
+        Returns:
+            dict: Dictionary with queue status information
+        """
+        if not hasattr(self, 'processing_queue') or not self.processing_queue:
+            return {"error": "Processing queue not initialized"}
+        
+        try:
+            # Get basic queue statistics
+            status = self.processing_queue.get_stats()
+            
+            # Get detailed information about files in different states
+            status["pending_files"] = self.processing_queue.get_files_by_status(ProcessingStatus.PENDING)
+            status["processing_files"] = self.processing_queue.get_files_by_status(ProcessingStatus.PROCESSING)
+            status["completed_files"] = self.processing_queue.get_files_by_status(ProcessingStatus.COMPLETED)
+            status["error_files"] = self.processing_queue.get_files_by_status(ProcessingStatus.ERROR)
+            status["failed_files"] = self.processing_queue.get_files_by_status(ProcessingStatus.FAILED)
+            
+            return status
+        except Exception as e:
+            self.logger.error(f"Error getting processing queue status: {str(e)}")
+            return {"error": str(e)}
+    
+    def retry_failed_files(self) -> int:
+        """
+        Retry all files in the processing queue that can be retried.
+        
+        Returns:
+            int: Number of files reset for retry
+        """
+        if not hasattr(self, 'processing_queue') or not self.processing_queue:
+            return 0
+        
+        try:
+            count = self.processing_queue.retry_all_errors()
+            self.logger.info(f"Reset {count} files for retry")
+            return count
+        except Exception as e:
+            self.logger.error(f"Error retrying files: {str(e)}")
+            return 0
+    
+    def clear_completed_files(self) -> int:
+        """
+        Remove all completed files from the processing queue.
+        
+        Returns:
+            int: Number of files removed
+        """
+        if not hasattr(self, 'processing_queue') or not self.processing_queue:
+            return 0
+        
+        try:
+            count = self.processing_queue.clear_completed()
+            self.logger.info(f"Cleared {count} completed files")
+            return count
+        except Exception as e:
+            self.logger.error(f"Error clearing completed files: {str(e)}")
+            return 0
