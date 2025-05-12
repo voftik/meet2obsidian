@@ -1,8 +1,8 @@
 """
-Утилиты безопасности для meet2obsidian.
+Security utilities for meet2obsidian.
 
-Этот модуль предоставляет функции и классы для операций, связанных с безопасностью,
-таких как безопасное хранение и получение API-ключей с использованием системного хранилища ключей.
+This module provides functions and classes for security-related operations,
+such as securely storing and retrieving API keys using the system keychain.
 """
 
 import logging
@@ -12,39 +12,39 @@ from typing import Optional, Dict, Any, List
 
 class KeychainManager:
     """
-    Управление API-ключами через macOS Keychain.
+    Manage API keys through macOS Keychain.
 
-    Этот класс предоставляет методы для безопасного хранения, извлечения и управления
-    API-ключами с использованием macOS Keychain через библиотеку keyring. Он обрабатывает
-    общие операции, такие как сохранение, получение и удаление API-ключей с
-    корректной обработкой ошибок и логированием.
+    This class provides methods for securely storing, retrieving, and managing
+    API keys using macOS Keychain through the keyring library. It handles
+    common operations such as saving, retrieving, and deleting API keys with
+    proper error handling and logging.
 
     Attributes:
-        SERVICE_NAME: Имя сервиса, используемое для всех записей в keychain.
+        SERVICE_NAME: Service name used for all keychain entries.
 
     Example:
         >>> from meet2obsidian.utils.logging import setup_logging, get_logger
         >>> from meet2obsidian.utils.security import KeychainManager
         >>>
-        >>> # Настройка логирования и создание менеджера keychain
+        >>> # Set up logging and create a keychain manager
         >>> setup_logging(level="info")
         >>> logger = get_logger("my_component")
         >>> keychain = KeychainManager(logger=logger)
         >>>
-        >>> # Сохранение API-ключа
+        >>> # Store an API key
         >>> keychain.store_api_key("rev_ai", "my_api_key_value")
         >>>
-        >>> # Получение API-ключа
+        >>> # Retrieve an API key
         >>> api_key = keychain.get_api_key("rev_ai")
         >>> if api_key:
-        >>>     # Использование API-ключа
-        >>>     print(f"API-ключ найден: {api_key[:4]}***")
+        >>>     # Use the API key
+        >>>     print(f"API key found: {api_key[:4]}***")
         >>>
-        >>> # Проверка существования ключа
+        >>> # Check if a key exists
         >>> if keychain.key_exists("claude"):
-        >>>     print("API-ключ Claude существует")
+        >>>     print("Claude API key exists")
         >>>
-        >>> # Удаление API-ключа
+        >>> # Delete an API key
         >>> keychain.delete_api_key("test_key")
     """
 
@@ -52,143 +52,143 @@ class KeychainManager:
 
     def __init__(self, logger=None):
         """
-        Инициализация менеджера ключей.
+        Initialize the key manager.
 
         Args:
-            logger: Объект логгера (опционально). Если не указан, создается новый логгер.
+            logger: Logger object (optional). If not provided, a new logger is created.
         """
         self.logger = logger or logging.getLogger(__name__)
 
     def store_api_key(self, key_name: str, api_key: str) -> bool:
         """
-        Сохранение API-ключа в хранилище.
+        Store an API key in the keychain.
 
         Args:
-            key_name: Название ключа (например, 'rev_ai', 'claude')
-            api_key: Значение API-ключа
+            key_name: Key name (e.g., 'rev_ai', 'claude')
+            api_key: API key value
 
         Returns:
-            bool: True в случае успеха, False при ошибке
+            bool: True on success, False on error
         """
         if not key_name:
-            self.logger.error("Невозможно сохранить API-ключ: имя ключа не может быть пустым")
+            self.logger.error("Cannot store API key: key name cannot be empty")
             return False
 
         if not api_key:
-            self.logger.warning(f"Сохранение пустого API-ключа для {key_name}")
+            self.logger.warning(f"Storing empty API key for {key_name}")
 
-        # Проверка, существует ли ключ (для целей логирования)
+        # Check if the key already exists (for logging purposes)
         key_exists = self.key_exists(key_name)
 
         try:
             keyring.set_password(self.SERVICE_NAME, key_name, api_key)
 
             if key_exists:
-                self.logger.info(f"API-ключ {key_name} успешно обновлен в хранилище")
+                self.logger.info(f"API key {key_name} successfully updated in the keychain")
             else:
-                self.logger.info(f"API-ключ {key_name} успешно сохранен в хранилище")
+                self.logger.info(f"API key {key_name} successfully stored in the keychain")
 
             return True
         except Exception as e:
-            self.logger.error(f"Ошибка при сохранении API-ключа {key_name}: {str(e)}")
+            self.logger.error(f"Error storing API key {key_name}: {str(e)}")
             return False
 
     def get_api_key(self, key_name: str) -> Optional[str]:
         """
-        Получение API-ключа из хранилища.
+        Retrieve an API key from the keychain.
 
         Args:
-            key_name: Название ключа
+            key_name: Key name
 
         Returns:
-            str или None: Значение API-ключа, если найден, иначе None
+            str or None: API key value if found, otherwise None
         """
         if not key_name:
-            self.logger.error("Невозможно получить API-ключ: имя ключа не может быть пустым")
+            self.logger.error("Cannot retrieve API key: key name cannot be empty")
             return None
 
         try:
             api_key = keyring.get_password(self.SERVICE_NAME, key_name)
             if api_key:
-                self.logger.debug(f"API-ключ {key_name} успешно получен из хранилища")
+                self.logger.debug(f"API key {key_name} successfully retrieved from the keychain")
                 return api_key
             else:
-                self.logger.warning(f"API-ключ {key_name} не найден в хранилище")
+                self.logger.warning(f"API key {key_name} not found in the keychain")
                 return None
         except Exception as e:
-            self.logger.error(f"Ошибка при получении API-ключа {key_name}: {str(e)}")
+            self.logger.error(f"Error retrieving API key {key_name}: {str(e)}")
             return None
 
     def delete_api_key(self, key_name: str) -> bool:
         """
-        Удаление API-ключа из хранилища.
+        Delete an API key from the keychain.
 
         Args:
-            key_name: Название ключа
+            key_name: Key name
 
         Returns:
-            bool: True в случае успеха, False при ошибке
+            bool: True on success, False on error
         """
         if not key_name:
-            self.logger.error("Невозможно удалить API-ключ: имя ключа не может быть пустым")
+            self.logger.error("Cannot delete API key: key name cannot be empty")
             return False
 
-        # Проверка существования ключа перед удалением
+        # Check key existence before deletion
         if not self.key_exists(key_name):
-            self.logger.warning(f"Невозможно удалить API-ключ {key_name}: ключ не найден")
+            self.logger.warning(f"Cannot delete API key {key_name}: key not found")
             return False
 
         try:
             keyring.delete_password(self.SERVICE_NAME, key_name)
-            self.logger.info(f"API-ключ {key_name} успешно удален из хранилища")
+            self.logger.info(f"API key {key_name} successfully deleted from the keychain")
             return True
         except Exception as e:
-            self.logger.error(f"Ошибка при удалении API-ключа {key_name}: {str(e)}")
+            self.logger.error(f"Error deleting API key {key_name}: {str(e)}")
             return False
 
     def key_exists(self, key_name: str) -> bool:
         """
-        Проверка существования API-ключа в хранилище.
+        Check if an API key exists in the keychain.
 
         Args:
-            key_name: Название ключа для проверки
+            key_name: Key name to check
 
         Returns:
-            bool: True если ключ существует, False в противном случае
+            bool: True if the key exists, False otherwise
         """
         if not key_name:
-            self.logger.error("Невозможно проверить API-ключ: имя ключа не может быть пустым")
+            self.logger.error("Cannot check API key: key name cannot be empty")
             return False
 
         try:
             api_key = keyring.get_password(self.SERVICE_NAME, key_name)
             return api_key is not None
         except Exception as e:
-            self.logger.error(f"Ошибка при проверке API-ключа {key_name}: {str(e)}")
+            self.logger.error(f"Error checking API key {key_name}: {str(e)}")
             return False
 
     def get_api_keys_status(self) -> Dict[str, bool]:
         """
-        Получение статуса необходимых API-ключей.
+        Get the status of required API keys.
 
-        Возвращает словарь со статусом каждого необходимого API-ключа.
+        Returns a dictionary with the status of each required API key.
 
         Returns:
-            Dict[str, bool]: Словарь, где ключи - имена API-ключей, значения - статус существования
+            Dict[str, bool]: Dictionary where keys are API key names and values are existence status
         """
         required_keys = ["rev_ai", "claude"]
         return {key: self.key_exists(key) for key in required_keys}
 
     def mask_api_key(self, api_key: str, visible_chars: int = 4) -> str:
         """
-        Маскирование API-ключа для безопасного отображения.
+        Mask an API key for secure display.
 
         Args:
-            api_key: API-ключ для маскирования
-            visible_chars: Количество символов, которые останутся видимыми в начале
+            api_key: API key to mask
+            visible_chars: Number of characters to keep visible at the beginning
 
         Returns:
-            str: Маскированная строка API-ключа
+            str: Masked API key string
         """
         if not api_key:
             return ""
