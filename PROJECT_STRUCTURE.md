@@ -30,7 +30,8 @@ meet2obsidian/
 │   │   │   ├── CLI Testing.md
 │   │   │   ├── FileMonitor.md
 │   │   │   ├── LaunchAgent.md
-│   │   │   └── Logging.md
+│   │   │   ├── Logging.md
+│   │   │   └── ProcessingQueue.md
 │   │   └── setup/
 │   │       ├── API Keys Setup.md
 │   │       └── Video Validation Tool.md
@@ -91,6 +92,11 @@ meet2obsidian/
 │   │   ├── __init__.py
 │   │   ├── generator.py
 │   │   └── obsidian.py
+│   ├── processing/
+│   │   ├── __init__.py
+│   │   ├── processor.py
+│   │   ├── queue.py
+│   │   └── state.py
 │   └── utils/
 │       ├── __init__.py
 │       ├── file_watcher.py
@@ -113,6 +119,7 @@ meet2obsidian/
 │   ├── epic16_launchagent_implementation_report.md
 │   ├── epic17_file_monitor_tests_report.md
 │   ├── epic18_file_watcher_implementation_report.md
+│   ├── epic19_processing_queue_report.md
 │   ├── epic7_logging_tests_report.md
 │   ├── epic8_implementation_report.md
 │   ├── epic9_implementation_report.md
@@ -130,8 +137,12 @@ meet2obsidian/
     │   ├── test_file_monitor_basic.py
     │   ├── test_file_monitor_integration.py
     │   ├── test_launchagent_integration.py
+    │   ├── test_persistence.py
     │   ├── test_pipeline.py
+    │   ├── test_processing_queue.py
+    │   ├── test_processing_queue_simplified.py
     │   └── test_security_integration.py
+    ├── run_processing_queue_tests.py
     ├── run_tests.py
     └── unit/
         ├── __init__.py
@@ -144,6 +155,11 @@ meet2obsidian/
         ├── test_file_monitor.py
         ├── test_launchagent.py
         ├── test_logging.py
+        ├── test_processing_queue_add.py
+        ├── test_processing_queue_priority.py
+        ├── test_processing_queue_process.py
+        ├── test_processing_queue_recovery.py
+        ├── test_processing_state.py
         └── test_security.py
 ```
 
@@ -189,6 +205,7 @@ graph TD
     DocsDevComponents --> DocsDevComponentsLogging["Logging.md"]
     DocsDevComponents --> DocsDevComponentsCLIArch["CLI Architecture.md"]
     DocsDevComponents --> DocsDevComponentsCLITest["CLI Testing.md"]
+    DocsDevComponents --> DocsDevComponentsProcessingQueue["ProcessingQueue.md"]
     DocsDevSetup --> DocsDevSetupAPIKeys["API Keys Setup.md"]
     DocsDevSetup --> DocsDevSetupVideoVal["Video Validation Tool.md"]
 
@@ -223,6 +240,7 @@ graph TD
     Meet2Obsidian --> Meet2ObsidianAudio["audio/"]
     Meet2Obsidian --> Meet2ObsidianNote["note/"]
     Meet2Obsidian --> Meet2ObsidianUtils["utils/"]
+    Meet2Obsidian --> Meet2ObsidianProcessing["processing/"]
     Meet2Obsidian --> Meet2ObsidianCLI["cli.py"]
     Meet2Obsidian --> Meet2ObsidianCLICommands["cli_commands/"]
     Meet2Obsidian --> Meet2ObsidianConfig["config.py"]
@@ -230,6 +248,12 @@ graph TD
     Meet2Obsidian --> Meet2ObsidianLaunchAgent["launchagent.py"]
     Meet2Obsidian --> Meet2ObsidianMonitor["monitor.py"]
     Meet2Obsidian --> Meet2ObsidianCache["cache.py"]
+
+    %% Processing Package
+    Meet2ObsidianProcessing --> Meet2ObsidianProcessingInit["__init__.py"]
+    Meet2ObsidianProcessing --> Meet2ObsidianProcessingProcessor["processor.py"]
+    Meet2ObsidianProcessing --> Meet2ObsidianProcessingQueue["queue.py"]
+    Meet2ObsidianProcessing --> Meet2ObsidianProcessingState["state.py"]
 
     %% CLI Commands
     Meet2ObsidianCLICommands --> Meet2ObsidianCLICommandsInit["__init__.py"]
@@ -278,6 +302,7 @@ graph TD
     TmpFiles --> TmpEpic16Report["epic16_launchagent_implementation_report.md"]
     TmpFiles --> TmpEpic17Report["epic17_file_monitor_tests_report.md"]
     TmpFiles --> TmpEpic18Report["epic18_file_watcher_implementation_report.md"]
+    TmpFiles --> TmpEpic19Report["epic19_processing_queue_report.md"]
     TmpFiles --> TmpEpic18Details["EPIC18_Implementation_Details.md"]
     TmpFiles --> TmpFileMonitorTestCompat["FileMonitor_Test_Compatibility_Report.md"]
     TmpFiles --> TmpEpicsSummary["completed_epics_summary.md"]
@@ -286,6 +311,7 @@ graph TD
     Tests --> TestsInit["__init__.py"]
     Tests --> TestsConftest["conftest.py"]
     Tests --> TestsRunTests["run_tests.py"]
+    Tests --> TestsRunProcessingQueueTests["run_processing_queue_tests.py"]
     Tests --> TestsData["data/"]
     Tests --> TestsFixtures["fixtures/"]
     Tests --> TestsIntegration["integration/"]
@@ -300,6 +326,9 @@ graph TD
     TestsIntegration --> TestsIntegrationLaunchAgent["test_launchagent_integration.py"]
     TestsIntegration --> TestsIntegrationFileMonitor["test_file_monitor_integration.py"]
     TestsIntegration --> TestsIntegrationFileMonitorBasic["test_file_monitor_basic.py"]
+    TestsIntegration --> TestsIntegrationProcessingQueue["test_processing_queue.py"]
+    TestsIntegration --> TestsIntegrationProcessingQueueSimplified["test_processing_queue_simplified.py"]
+    TestsIntegration --> TestsIntegrationPersistence["test_persistence.py"]
 
     %% Unit Tests
     TestsUnit --> TestsUnitInit["__init__.py"]
@@ -313,6 +342,11 @@ graph TD
     TestsUnit --> TestsUnitAppManagerLaunchAgent["test_application_manager_launchagent.py"]
     TestsUnit --> TestsUnitLaunchAgent["test_launchagent.py"]
     TestsUnit --> TestsUnitFileMonitor["test_file_monitor.py"]
+    TestsUnit --> TestsUnitProcessingState["test_processing_state.py"]
+    TestsUnit --> TestsUnitProcessingQueueAdd["test_processing_queue_add.py"]
+    TestsUnit --> TestsUnitProcessingQueueProcess["test_processing_queue_process.py"]
+    TestsUnit --> TestsUnitProcessingQueueRecovery["test_processing_queue_recovery.py"]
+    TestsUnit --> TestsUnitProcessingQueuePriority["test_processing_queue_priority.py"]
 
     %% Test Fixtures
     TestsFixtures --> TestsFixturesConfig["test_config.json"]
@@ -333,7 +367,7 @@ graph TD
     classDef config fill:#e8eaf4,stroke:#666,stroke-width:1px
     classDef tmp fill:#fef9e6,stroke:#666,stroke-width:1px
 
-    class Meet2Obsidian,Meet2ObsidianAPI,Meet2ObsidianAudio,Meet2ObsidianNote,Meet2ObsidianUtils code
+    class Meet2Obsidian,Meet2ObsidianAPI,Meet2ObsidianAudio,Meet2ObsidianNote,Meet2ObsidianUtils,Meet2ObsidianProcessing code
     class Docs,DocsAPI,DocsAssets,DocsDev,DocsExamples,DocsInternal,DocsUser doc
     class Tests,TestsIntegration,TestsUnit test
     class ConfigFiles,ProjectToml,Requirements,Setup,License,Readme,ClaudeMD,ProjectStructureMD config
@@ -351,6 +385,7 @@ The project is in active development. Current status:
   - Process monitoring and control via ApplicationManager in core.py ✅
   - LaunchAgent integration for macOS autostart functionality ✅
   - File monitoring implementation for automatic video processing ✅
+  - Processing Queue system for managing file processing tasks ✅
   - Complete CLI interface with command groups ✅
   - CLI commands for service management, status reporting, and configuration management ✅
   - Utility scripts for video validation and API key management ✅
@@ -373,6 +408,7 @@ The project is in active development. Current status:
   - Comprehensive CLI interface tests added ✅
   - Comprehensive ApplicationManager tests added ✅
   - LaunchAgent and FileMonitor tests added ✅
+  - Processing Queue system tests added ✅
 
 - **Examples**:
   - Example of logging functionality
@@ -387,6 +423,7 @@ Key functional components:
 - `core.py`: ApplicationManager class for process monitoring and control ✅
 - `launchagent.py`: LaunchAgentManager for macOS autostart integration ✅
 - `monitor.py`: FileMonitor for automatic video file detection and processing ✅
+- `processing/`: Processing Queue system for file handling with priority and error recovery ✅
 - `cli.py`: Main CLI entry point with modular command structure ✅
 - **CLI Command Modules**:
   - `cli_commands/service_command.py`: Service start/stop commands with autostart support ✅
@@ -494,5 +531,18 @@ Key functional components:
   - ✅ Task 8: Create comprehensive documentation
   - ✅ Task 9: Add backward compatibility for existing tests
   - ✅ Task 10: Create user documentation for improved file monitoring
+- **Epic 19**: Processing queue system implementation ✅ (2025-05-14)
+  - ✅ Task 1: Create comprehensive tests for processing state tracking
+  - ✅ Task 2: Create tests for adding files to processing queue
+  - ✅ Task 3: Create tests for processing files from queue
+  - ✅ Task 4: Create tests for queue recovery after restart
+  - ✅ Task 5: Create tests for priority-based processing
+  - ✅ Task 6: Implement ProcessingState class for state tracking
+  - ✅ Task 7: Implement FileProcessor for handling file processing
+  - ✅ Task 8: Implement ProcessingQueue for queue management
+  - ✅ Task 9: Add support for priority-based processing
+  - ✅ Task 10: Implement queue persistence and recovery
+  - ✅ Task 11: Create integration tests for the processing pipeline
+  - ✅ Task 12: Create simplified test suite for reliable integration testing
 
-Last Updated: 2025-05-12
+Last Updated: 2025-05-14

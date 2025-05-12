@@ -133,6 +133,9 @@ meet2obsidian process /path/to/meeting.mp4
 # Run all tests
 ./tests/run_tests.py
 
+# Run processing queue tests
+./tests/run_processing_queue_tests.py
+
 # Run specific tests
 ./tests/run_tests.py tests/unit/test_logging.py
 
@@ -167,6 +170,11 @@ Meet2Obsidian offers several customization options:
 - [x] Enhanced CLI commands for service management with autostart support
 
 ### Coming Soon
+- [x] Processing queue system for efficient file handling with features like:
+  - Priority-based processing queue for important files
+  - Robust error handling with automatic retries
+  - State persistence for recovery after application restart
+  - Event-based callbacks for processing status updates
 - [ ] Support for additional video/audio formats
 - [ ] Integration with alternative transcription services
 - [ ] File monitoring implementation for automatic video processing
@@ -177,14 +185,24 @@ Meet2Obsidian offers several customization options:
 
 ## 🔍 Technical Features
 
+### Processing Queue System
+Advanced file processing queue with sophisticated features:
+- Thread-based concurrent processing for efficient resource utilization
+- Priority-based queuing system with configurable priorities
+- Robust error handling with automatic retries and failure management
+- State persistence for recovery after application restart
+- Callback system for processing status monitoring and event handling
+- Process cancellation and waiting capabilities
+- Comprehensive statistics and state tracking
+
 ### Local Processing
 Audio extraction and file management happen locally, minimizing bandwidth usage.
 
 ### Robust Error Handling
-The tool automatically recovers from interruptions and API failures.
+The tool automatically recovers from interruptions and API failures, with sophisticated retry logic for transient errors.
 
 ### Efficient Resource Usage
-Optimized to minimize CPU and memory usage while running in the background.
+Optimized to minimize CPU and memory usage while running in the background, with configurable concurrency limits.
 
 ### Structured Logging
 Comprehensive logging system with structlog for JSON-formatted logs, log rotation, and contextual logging to simplify troubleshooting and monitoring. Features include:
