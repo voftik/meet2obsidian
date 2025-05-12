@@ -264,13 +264,37 @@ class ApplicationManager:
                 video_dir = self.config_manager.get_value("paths.video_directory", default="")
                 if video_dir:
                     self.logger.info(f"Video directory monitoring configured: {video_dir}")
-                    
-                    # Placeholder for future FileMonitor implementation
-                    # from meet2obsidian.monitor import FileMonitor
-                    # self.file_monitor = FileMonitor(video_dir)
-                    # if not self.file_monitor.start():
-                    #     self.logger.error("Error starting file monitoring")
-                    #     return False
+
+                    try:
+                        from meet2obsidian.monitor import FileMonitor
+
+                        # Get file patterns and poll interval from config if available
+                        patterns = self.config_manager.get_value("processing.file_patterns",
+                                                               default=["*.mp4", "*.mov", "*.webm", "*.mkv"])
+                        poll_interval = self.config_manager.get_value("processing.poll_interval", default=60)
+
+                        # Create and start file monitor
+                        self.file_monitor = FileMonitor(
+                            directory=os.path.expanduser(video_dir),
+                            file_patterns=patterns,
+                            poll_interval=poll_interval,
+                            logger=self.logger
+                        )
+
+                        # Register callback function for new files
+                        self.file_monitor.register_file_callback(self._handle_new_file)
+
+                        # Start monitoring
+                        if not self.file_monitor.start():
+                            self.logger.error("Error starting file monitoring")
+                            return False
+
+                        self.logger.info(f"File monitoring started for {video_dir}")
+                    except ImportError as e:
+                        self.logger.warning(f"Could not import FileMonitor: {str(e)}")
+                    except Exception as e:
+                        self.logger.error(f"Error initializing FileMonitor: {str(e)}")
+                        return False
             except ImportError as e:
                 self.logger.warning(f"Could not load configuration module: {str(e)}")
             except Exception as e:
@@ -300,15 +324,15 @@ class ApplicationManager:
                 self.logger.warning("Components were not initialized")
                 return True
             
-            # Future FileMonitor implementation:
-            # if hasattr(self, 'file_monitor') and self.file_monitor:
-            #     try:
-            #         if not self.file_monitor.stop():
-            #             self.logger.warning("Failed to stop file monitoring")
-            #         else:
-            #             self.logger.info("File monitoring stopped")
-            #     except Exception as e:
-            #         self.logger.error(f"Error stopping file monitoring: {str(e)}")
+            # Stop the FileMonitor if it's running
+            if hasattr(self, 'file_monitor') and self.file_monitor:
+                try:
+                    if not self.file_monitor.stop():
+                        self.logger.warning("Failed to stop file monitoring")
+                    else:
+                        self.logger.info("File monitoring stopped")
+                except Exception as e:
+                    self.logger.error(f"Error stopping file monitoring: {str(e)}")
             
             # Reset component state
             self._components_initialized = False
@@ -360,38 +384,67 @@ class ApplicationManager:
         
         self.logger.debug(f"Completed job: {job_id}, success: {success}")
     
-    def setup_autostart(self, enable=True) -> bool:
+    def setup_autostart(self, enable=True, keep_alive=True, run_at_load=True) -> bool:
         """
         Configure autostart via LaunchAgent.
-        
+
         Args:
             enable: True to enable autostart, False to disable
-            
+            keep_alive: Whether the process should be kept alive if it exits
+            run_at_load: Whether the process should run when the agent is loaded
+
         Returns:
             bool: True if setup completed successfully, False otherwise
         """
         # Check platform - for non-macOS platforms, use the non-macOS implementation
         if sys.platform != 'darwin':
             return self.setup_autostart_non_macos(enable)
-            
+
         # Try to use LaunchAgentManager if available
         try:
             # Import the LaunchAgentManager
             from meet2obsidian.launchagent import LaunchAgentManager
-            
-            # Create a LaunchAgentManager instance
-            manager = LaunchAgentManager(logger=self.logger)
-            
+
+            # Get values from configuration if available
+            working_directory = None
+            env_vars = None
+
+            if hasattr(self, 'config_manager') and self.config_manager:
+                # Look for configuration values to customize the LaunchAgent
+                try:
+                    # Get values from configuration
+                    config_keep_alive = self.config_manager.get_value("system.autostart.keep_alive")
+                    if config_keep_alive is not None:
+                        keep_alive = config_keep_alive
+
+                    config_run_at_load = self.config_manager.get_value("system.autostart.run_at_load")
+                    if config_run_at_load is not None:
+                        run_at_load = config_run_at_load
+
+                    # Get application paths
+                    app_dir = self.config_manager.get_value("paths.app_directory")
+                    if app_dir:
+                        working_directory = os.path.expanduser(app_dir)
+                except Exception as e:
+                    self.logger.warning(f"Could not get autostart configuration values: {str(e)}")
+
+            # Create a LaunchAgentManager instance with the appropriate settings
+            manager = LaunchAgentManager(
+                logger=self.logger,
+                keep_alive=keep_alive,
+                run_at_load=run_at_load
+            )
+
             if enable:
-                # Generate plist file and load the agent
-                if not manager.generate_plist_file():
+                # Generate plist file with additional options and load the agent
+                if not manager.generate_plist_file(working_directory=working_directory, env_vars=env_vars):
                     self.logger.error("Failed to generate LaunchAgent plist file")
                     return False
-                
+
                 if not manager.install():
                     self.logger.error("Failed to install LaunchAgent")
                     return False
-                
+
                 self.logger.info("LaunchAgent setup successful")
                 return True
             else:
@@ -399,7 +452,7 @@ class ApplicationManager:
                 if not manager.uninstall():
                     self.logger.error("Failed to uninstall LaunchAgent")
                     return False
-                
+
                 self.logger.info("LaunchAgent removed successfully")
                 return True
         except (ImportError, Exception) as e:
@@ -410,7 +463,7 @@ class ApplicationManager:
     def check_autostart_status(self) -> Tuple[bool, Optional[Dict[str, Any]]]:
         """
         Check if autostart is enabled and get status of the LaunchAgent.
-        
+
         Returns:
             Tuple containing:
                 bool: True if autostart is enabled, False otherwise
@@ -419,20 +472,42 @@ class ApplicationManager:
         try:
             # Import the LaunchAgentManager
             from meet2obsidian.launchagent import LaunchAgentManager
-            
+
             # Create a LaunchAgentManager instance
-            manager = LaunchAgentManager()
-            
+            manager = LaunchAgentManager(logger=self.logger)
+
             # Check if plist file exists
             if not manager.plist_exists():
                 return False, None
-            
-            # Check if agent is running
-            return manager.get_status()
+
+            # For backward compatibility with tests, check if get_full_status exists
+            if hasattr(manager, 'get_full_status'):
+                # Get comprehensive status information
+                status_info = manager.get_full_status()
+
+                # The first boolean indicates if it's running
+                is_running = status_info.get("running", False)
+
+                # Return both the running status and the full status info
+                return is_running, status_info
+            else:
+                # Fallback to the old method for test compatibility
+                return manager.get_status()
+
         except ImportError:
             # Fall back to checking if plist file exists
             plist_path = os.path.expanduser("~/Library/LaunchAgents/com.user.meet2obsidian.plist")
-            return os.path.exists(plist_path), None
+            is_exists = os.path.exists(plist_path)
+
+            # If the file exists, create a minimal status dict
+            if is_exists:
+                return False, {
+                    "installed": True,
+                    "running": False,
+                    "plist_path": plist_path,
+                    "label": "com.user.meet2obsidian"
+                }
+            return False, None
         except Exception as e:
             self.logger.error(f"Error checking autostart status: {str(e)}")
             return False, None
@@ -531,10 +606,10 @@ class ApplicationManager:
     def _check_process_exists(self, pid: int) -> bool:
         """
         Check if a process with the given PID exists.
-        
+
         Args:
             pid: Process identifier
-            
+
         Returns:
             bool: True if process exists, False otherwise
         """
@@ -546,3 +621,34 @@ class ApplicationManager:
             return False
         except Exception:
             return False
+
+    def _handle_new_file(self, file_path: str) -> None:
+        """
+        Handle detection of a new file by the file monitor.
+
+        This method is called when a new file is detected by the FileMonitor.
+        It should start the processing pipeline for the file.
+
+        Args:
+            file_path: Absolute path to the new file
+        """
+        try:
+            self.logger.info(f"Processing new file: {os.path.basename(file_path)}")
+
+            # Create a job ID based on file name and timestamp
+            job_id = f"job_{os.path.basename(file_path)}_{int(time.time())}"
+
+            # Add job to active jobs
+            job_info = {
+                "file": file_path,
+                "stage": "detected",
+                "progress": "0%"
+            }
+            self.add_job(job_id, job_info)
+
+            # Placeholder: Eventually this would trigger the full processing pipeline
+            # For now, we just log that we received the file
+            self.logger.info(f"Created job {job_id} for file: {file_path}")
+
+        except Exception as e:
+            self.logger.error(f"Error handling new file {file_path}: {str(e)}")

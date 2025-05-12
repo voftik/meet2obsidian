@@ -217,10 +217,14 @@ class TestLaunchAgentStatus:
         self.plist_path = os.path.expanduser("~/Library/LaunchAgents/com.user.meet2obsidian.plist")
     
     @patch('subprocess.run')
-    def test_check_launchagent_status_active(self, mock_run):
+    @patch('os.path.exists')
+    def test_check_launchagent_status_active(self, mock_exists, mock_run):
         """Test checking status of an active LaunchAgent."""
         from meet2obsidian.launchagent import LaunchAgentManager
-        
+
+        # Mock os.path.exists to return True for plist file
+        mock_exists.return_value = True
+
         # Mock subprocess.run to return a running agent
         mock_process = MagicMock()
         mock_process.returncode = 0
@@ -232,13 +236,13 @@ class TestLaunchAgentStatus:
         }
         """
         mock_run.return_value = mock_process
-        
+
         # Create LaunchAgentManager
         manager = LaunchAgentManager(plist_path=self.plist_path)
-        
+
         # Check status
         is_active, info = manager.get_status()
-        
+
         # Check result
         assert is_active is True
         assert isinstance(info, dict)

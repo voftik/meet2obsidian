@@ -131,6 +131,7 @@ class TestStatusCommand:
                 "processed_files": 5,
                 "pending_files": 2
             }
+            app_instance.check_autostart_status.return_value = (False, None)
 
             # Настройка мока KeychainManager
             keychain_instance = mock_keychain_manager.return_value
@@ -143,6 +144,7 @@ class TestStatusCommand:
 
             assert result.exit_code == 0
             app_instance.is_running.assert_called_once()
+            app_instance.check_autostart_status.assert_called_once()
             keychain_instance.get_api_keys_status.assert_called_once()
 
     def test_status_with_json_format(self):
@@ -160,6 +162,7 @@ class TestStatusCommand:
                 "processed_files": 5,
                 "pending_files": 2
             }
+            app_instance.check_autostart_status.return_value = (False, None)
 
             # Настройка мока KeychainManager
             keychain_instance = mock_keychain_manager.return_value
@@ -169,7 +172,7 @@ class TestStatusCommand:
             }
 
             # Настройка мока json.dumps
-            mock_json_dumps.return_value = '{"running": true, "api_keys": {"rev_ai": true, "claude": false}}'
+            mock_json_dumps.return_value = '{"running": true, "api_keys": {"rev_ai": true, "claude": false}, "autostart": {"enabled": false, "running": false, "supported": true}}'
 
             result = runner.invoke(cli, ['status', '--format', 'json'])
 
@@ -194,6 +197,12 @@ class TestStatusCommand:
                 ],
                 "last_errors": []
             }
+            app_instance.check_autostart_status.return_value = (True, {
+                "running": True,
+                "installed": True,
+                "pid": 12345,
+                "label": "com.user.meet2obsidian"
+            })
 
             # Настройка мока KeychainManager
             keychain_instance = mock_keychain_manager.return_value
@@ -207,6 +216,7 @@ class TestStatusCommand:
             assert result.exit_code == 0
             app_instance.is_running.assert_called_once()
             app_instance.get_status.assert_called_once()
+            app_instance.check_autostart_status.assert_called_once()
 
 
 class TestConfigCommand:

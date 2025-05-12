@@ -264,8 +264,34 @@ class ConfigManager:
 
         # System checks
         if 'system' in self.config:
-            if 'autostart' in self.config['system'] and not isinstance(self.config['system']['autostart'], bool):
-                errors.append("system.autostart must be a boolean")
+            # Autostart checks
+            if 'autostart' in self.config['system']:
+                # Handle both old style (boolean) and new style (dict)
+                if isinstance(self.config['system']['autostart'], bool):
+                    # Old style config - we'll convert it
+                    self.config['system']['autostart'] = {
+                        "enabled": self.config['system']['autostart'],
+                        "keep_alive": True,
+                        "run_at_load": True,
+                        "environment_variables": {}
+                    }
+                elif isinstance(self.config['system']['autostart'], dict):
+                    # Check nested fields
+                    autostart = self.config['system']['autostart']
+
+                    if 'enabled' in autostart and not isinstance(autostart['enabled'], bool):
+                        errors.append("system.autostart.enabled must be a boolean")
+
+                    if 'keep_alive' in autostart and not isinstance(autostart['keep_alive'], bool):
+                        errors.append("system.autostart.keep_alive must be a boolean")
+
+                    if 'run_at_load' in autostart and not isinstance(autostart['run_at_load'], bool):
+                        errors.append("system.autostart.run_at_load must be a boolean")
+
+                    if 'environment_variables' in autostart and not isinstance(autostart['environment_variables'], dict):
+                        errors.append("system.autostart.environment_variables must be a dictionary")
+                else:
+                    errors.append("system.autostart must be either a boolean or a dictionary")
 
             if 'loglevel' in self.config['system'] and not isinstance(self.config['system']['loglevel'], str):
                 errors.append("system.loglevel must be a string")
@@ -290,7 +316,8 @@ class ConfigManager:
             "paths": {
                 "video_directory": "",
                 "obsidian_vault": "",
-                "output_directory": ""
+                "output_directory": "",
+                "app_directory": ""  # Working directory for the application
             },
             "api": {
                 "rev_ai": {
@@ -310,7 +337,12 @@ class ConfigManager:
                 "file_patterns": ["*.mp4", "*.mov", "*.webm", "*.mkv"]
             },
             "system": {
-                "autostart": False,
+                "autostart": {
+                    "enabled": False,
+                    "keep_alive": True,
+                    "run_at_load": True,
+                    "environment_variables": {}  # Custom environment variables
+                },
                 "loglevel": "info",
                 "notifications": True,
                 "pid_file": "~/Library/Application Support/meet2obsidian/meet2obsidian.pid",

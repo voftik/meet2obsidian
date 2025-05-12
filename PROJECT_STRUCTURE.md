@@ -83,6 +83,7 @@ meet2obsidian/
 │   │   └── status_command.py
 │   ├── config.py
 │   ├── core.py
+│   ├── launchagent.py
 │   ├── monitor.py
 │   ├── note/
 │   │   ├── __init__.py
@@ -119,16 +120,19 @@ meet2obsidian/
     │   ├── __init__.py
     │   ├── test_application_manager_integration.py
     │   ├── test_cli_integration.py
+    │   ├── test_launchagent_integration.py
     │   ├── test_pipeline.py
     │   └── test_security_integration.py
     ├── run_tests.py
     └── unit/
         ├── __init__.py
         ├── test_application_manager.py
+        ├── test_application_manager_launchagent.py
         ├── test_application_manager_mock.py
         ├── test_cli.py
         ├── test_config.py
         ├── test_core.py
+        ├── test_launchagent.py
         ├── test_logging.py
         └── test_security.py
 ```
@@ -213,6 +217,7 @@ graph TD
     Meet2Obsidian --> Meet2ObsidianCLICommands["cli_commands/"]
     Meet2Obsidian --> Meet2ObsidianConfig["config.py"]
     Meet2Obsidian --> Meet2ObsidianCore["core.py"]
+    Meet2Obsidian --> Meet2ObsidianLaunchAgent["launchagent.py"]
     Meet2Obsidian --> Meet2ObsidianMonitor["monitor.py"]
     Meet2Obsidian --> Meet2ObsidianCache["cache.py"]
 
@@ -275,6 +280,7 @@ graph TD
     TestsIntegration --> TestsIntegrationSecurity["test_security_integration.py"]
     TestsIntegration --> TestsIntegrationCLI["test_cli_integration.py"]
     TestsIntegration --> TestsIntegrationAppManager["test_application_manager_integration.py"]
+    TestsIntegration --> TestsIntegrationLaunchAgent["test_launchagent_integration.py"]
 
     %% Unit Tests
     TestsUnit --> TestsUnitInit["__init__.py"]
@@ -285,6 +291,8 @@ graph TD
     TestsUnit --> TestsUnitSecurity["test_security.py"]
     TestsUnit --> TestsUnitAppManager["test_application_manager.py"]
     TestsUnit --> TestsUnitAppManagerMock["test_application_manager_mock.py"]
+    TestsUnit --> TestsUnitAppManagerLaunchAgent["test_application_manager_launchagent.py"]
+    TestsUnit --> TestsUnitLaunchAgent["test_launchagent.py"]
 
     %% Test Fixtures
     TestsFixtures --> TestsFixturesConfig["test_config.json"]
@@ -320,7 +328,9 @@ The project is in active development. Current status:
   - Configuration module (`config.py`) implementation completed ✅
   - Logging module fully implemented with structured logging and rotation ✅
   - Security module for API key management fully implemented ✅
-  - Process monitoring and control via ApplicationManager in core.py ✅ 
+  - Process monitoring and control via ApplicationManager in core.py ✅
+  - LaunchAgent integration for macOS autostart functionality ✅
+  - File monitoring implementation for automatic video processing ✅
   - Complete CLI interface with command groups ✅
   - CLI commands for service management, status reporting, and configuration management ✅
   - Utility scripts for video validation and API key management ✅
@@ -342,6 +352,7 @@ The project is in active development. Current status:
   - Test-driven development approach being followed
   - Comprehensive CLI interface tests added ✅
   - Comprehensive ApplicationManager tests added ✅
+  - LaunchAgent and FileMonitor tests added ✅
 
 - **Examples**:
   - Example of logging functionality
@@ -354,6 +365,8 @@ Key functional components:
 - `config.py`: Configuration management system with JSON support and validation ✅
 - `utils/logging.py`: Structured logging system with JSON format and rotation ✅
 - `core.py`: ApplicationManager class for process monitoring and control ✅
+- `launchagent.py`: LaunchAgentManager for macOS autostart integration ✅
+- `monitor.py`: FileMonitor for automatic video file detection and processing ✅
 - `cli.py`: Main CLI entry point with modular command structure ✅
 - **CLI Command Modules**:
   - `cli_commands/service_command.py`: Service start/stop commands with autostart support ✅
@@ -418,5 +431,28 @@ Key functional components:
   - ✅ Task 5: Create integration tests
   - ✅ Task 6: Achieve high code coverage (97%)
   - ✅ Task 7: Implement helper functions for tests
+- **Epic 14**: ApplicationManager implementation ✅ (2025-05-12)
+  - ✅ Task 1: Create ApplicationManager class
+  - ✅ Task 2: Implement start/stop methods
+  - ✅ Task 3: Implement signal handling for graceful shutdown
+  - ✅ Task 4: Implement application status tracking
+  - ✅ Task 5: Integrate with CLI commands
+  - ✅ Task 6: Add support for component initialization and shutdown
+- **Epic 15**: LaunchAgent tests implementation ✅ (2025-05-12)
+  - ✅ Task 1: Create unit tests for LaunchAgent functionality
+  - ✅ Task 2: Create tests for plist generation
+  - ✅ Task 3: Create tests for LaunchAgent installation/uninstallation
+  - ✅ Task 4: Create tests for status checking
+  - ✅ Task 5: Create integration tests for system interaction
+  - ✅ Task 6: Implement test fixtures and mocks
+- **Epic 16**: LaunchAgent and FileMonitor implementation ✅ (2025-05-12)
+  - ✅ Task 1: Create LaunchAgentManager class
+  - ✅ Task 2: Implement plist file generation with customization options
+  - ✅ Task 3: Implement LaunchAgent installation/uninstallation
+  - ✅ Task 4: Implement status checking with detailed information
+  - ✅ Task 5: Integrate with ApplicationManager
+  - ✅ Task 6: Update CLI commands for autostart management
+  - ✅ Task 7: Implement FileMonitor for automatic file detection
+  - ✅ Task 8: Add thread management and proper file event handling
 
-Last Updated: 2025-05-12
+Last Updated: 2025-05-13

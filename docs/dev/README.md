@@ -26,15 +26,17 @@ This section is intended for developers working on the meet2obsidian project. He
 - Working with Logging
 
 ### Components
-- File Monitor
+- [Application Manager](components/Application%20Manager.md) - Application lifecycle and component management
+- [File Monitor](components/File%20Monitor.md) - Automatic file detection and processing
+- [LaunchAgent Integration](components/LaunchAgent%20Integration.md) - macOS autostart functionality
+- [Logging](components/Logging.md) - Structured logging system
+- [API Key Security](components/API%20Key%20Security.md) - Secure API key storage system
+- [API Key Management](components/API%20Key%20Management.md) - API key management
 - Audio Processor
 - Transcription Service
 - Content Analyzer
 - Note Generator
 - Obsidian Integration
-- [Logging](components/Logging.md) - Structured logging system
-- [API Key Security](components/API%20Key%20Security.md) - Secure API key storage system
-- [API Key Management](components/API%20Key%20Management.md) - API key management
 
 ### Roadmap
 - Current Status

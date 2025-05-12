@@ -113,23 +113,76 @@ def restart(ctx, force):
 
 @service.command()
 @click.option('--enable/--disable', required=True, help='Enable or disable autostart.')
+@click.option('--keep-alive/--no-keep-alive', default=True,
+              help='Whether to keep the service alive if it crashes.')
+@click.option('--run-at-load/--no-run-at-load', default=True,
+              help='Whether to run the service when the LaunchAgent is loaded.')
+@click.option('--status', is_flag=True, help='Just show current autostart status.')
 @click.pass_context
-def autostart(ctx, enable):
+def autostart(ctx, enable, keep_alive, run_at_load, status):
     """Configure service autostart at login."""
     console = ctx.obj.get('console', Console())
     logger = ctx.obj.get('logger', get_logger("cli.service"))
-    
+
     # Create application manager
     app_manager = ApplicationManager()
-    
+
+    # If status flag is set, show status and exit
+    if status:
+        is_active, info = app_manager.check_autostart_status()
+
+        # Create a nice table to display the status
+        status_table = Table(title="Autostart Status", show_header=True, header_style="bold cyan")
+        status_table.add_column("Parameter", style="dim")
+        status_table.add_column("Value")
+
+        # Basic status - whether autostart is enabled and running
+        if info and "installed" in info:
+            status_installed = "[green]✓[/green]" if info["installed"] else "[red]✗[/red]"
+            status_table.add_row("Installed", status_installed)
+
+        status_running = "[green]✓[/green]" if is_active else "[red]✗[/red]"
+        status_table.add_row("Running", status_running)
+
+        # If we have detailed information, show it
+        if info:
+            # Plist file path
+            if "plist_path" in info:
+                status_table.add_row("Plist Path", info["plist_path"])
+
+            # LaunchAgent configuration
+            if "run_at_load" in info:
+                value = "[green]✓[/green]" if info["run_at_load"] else "[red]✗[/red]"
+                status_table.add_row("Run at Load", value)
+
+            if "keep_alive" in info:
+                value = "[green]✓[/green]" if info["keep_alive"] else "[red]✗[/red]"
+                status_table.add_row("Keep Alive", value)
+
+            # Process information
+            if "pid" in info and info["pid"]:
+                status_table.add_row("Process ID", str(info["pid"]))
+
+            # Last modified
+            if "last_modified" in info:
+                from datetime import datetime
+                modified_time = datetime.fromtimestamp(info["last_modified"])
+                status_table.add_row("Last Modified", modified_time.strftime("%Y-%m-%d %H:%M:%S"))
+
+        console.print(status_table)
+        return
+
     # Configure autostart
     with console.status("[bold cyan]Configuring autostart...[/bold cyan]", spinner="dots"):
-        success = app_manager.setup_autostart(enable)
-    
+        success = app_manager.setup_autostart(enable, keep_alive, run_at_load)
+
     if success:
         action = "enabled" if enable else "disabled"
         console.print(f"[success]✓ Autostart {action} successfully[/success]")
-        logger.info(f"Autostart {action}")
+        if enable:
+            console.print(f"[info]Keep Alive: {'Yes' if keep_alive else 'No'}[/info]")
+            console.print(f"[info]Run at Load: {'Yes' if run_at_load else 'No'}[/info]")
+        logger.info(f"Autostart {action} with Keep alive: {keep_alive}, Run at load: {run_at_load}")
     else:
         console.print("[error]✗ Error configuring autostart[/error]")
         logger.error("Error configuring autostart")
