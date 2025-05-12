@@ -25,7 +25,7 @@ def completion(ctx, shell, install):
     logger = ctx.obj.get('logger', get_logger("cli.completion"))
     
     if not COMPLETION_AVAILABLE:
-        console.print("[error]✗ Библиотека click_completion не установлена. Установите ее для поддержки автодополнения:[/error]")
+        console.print("[error]✗ click_completion library is not installed. Install it for autocompletion support:[/error]")
         console.print("  pip install click-completion")
         return 1
     
@@ -34,7 +34,7 @@ def completion(ctx, shell, install):
         shell = click_completion.get_auto_shell()
     
     if not shell:
-        console.print("[error]✗ Не удалось определить тип оболочки. Укажите его явно с помощью опции --shell[/error]")
+        console.print("[error]✗ Could not determine shell type. Specify it explicitly with the --shell option[/error]")
         return 1
     
     # Генерируем скрипт автодополнения
@@ -45,14 +45,14 @@ def completion(ctx, shell, install):
         shell_config_file = _get_shell_config_file(shell)
         
         if not shell_config_file:
-            console.print(f"[error]✗ Не удалось определить файл конфигурации для оболочки {shell}[/error]")
+            console.print(f"[error]✗ Could not determine configuration file for shell {shell}[/error]")
             return 1
         
         # Проверяем, что скрипт автодополнения еще не установлен
         try:
             with open(shell_config_file, 'r') as f:
                 if completion_script in f.read():
-                    console.print(f"[warning]Автодополнение уже установлено в {shell_config_file}[/warning]")
+                    console.print(f"[warning]Autocompletion already installed in {shell_config_file}[/warning]")
                     return
         except Exception:
             pass
@@ -62,13 +62,13 @@ def completion(ctx, shell, install):
             with open(shell_config_file, 'a') as f:
                 f.write(f"\n# meet2obsidian completion\n{completion_script}\n")
             
-            console.print(f"[success]✓ Автодополнение успешно установлено в [bold]{shell_config_file}[/bold][/success]")
-            console.print(f"Перезапустите оболочку или выполните:")
+            console.print(f"[success]✓ Autocompletion successfully installed in [bold]{shell_config_file}[/bold][/success]")
+            console.print(f"Restart your shell or run:")
             console.print(f"  source {shell_config_file}")
-            logger.info(f"Автодополнение успешно установлено в {shell_config_file}")
+            logger.info(f"Autocompletion successfully installed in {shell_config_file}")
         except Exception as e:
-            console.print(f"[error]✗ Ошибка при установке автодополнения: {str(e)}[/error]")
-            logger.error(f"Ошибка при установке автодополнения: {str(e)}")
+            console.print(f"[error]✗ Error installing autocompletion: {str(e)}[/error]")
+            logger.error(f"Error installing autocompletion: {str(e)}")
             return 1
     else:
         # Просто выводим скрипт автодополнения

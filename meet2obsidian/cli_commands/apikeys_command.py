@@ -37,16 +37,16 @@ def set(key_name: str, value: str):
     
     # Проверка имени ключа
     if not key_name:
-        click.echo("Ошибка: Имя ключа не может быть пустым.")
+        click.echo("Error: Key name cannot be empty.")
         return
     
     # Сохранение ключа
     result = keychain.store_api_key(key_name, value)
     
     if result:
-        click.echo(f"API-ключ '{key_name}' успешно сохранен в хранилище.")
+        click.echo(f"API key '{key_name}' successfully saved to storage.")
     else:
-        click.echo(f"Ошибка: Не удалось сохранить API-ключ '{key_name}'.")
+        click.echo(f"Error: Failed to save API key '{key_name}'.")
 
 
 @apikeys.command()
@@ -66,7 +66,7 @@ def get(key_name: str, show: bool):
     
     # Проверка существования ключа
     if not keychain.key_exists(key_name):
-        click.echo(f"Ошибка: API-ключ '{key_name}' не найден.")
+        click.echo(f"Error: API key '{key_name}' not found.")
         return
     
     # Получение ключа
@@ -79,7 +79,7 @@ def get(key_name: str, show: bool):
             masked_key = keychain.mask_api_key(api_key, visible_chars=4)
             click.echo(f"API-ключ '{key_name}': {masked_key}")
     else:
-        click.echo(f"Ошибка: Не удалось получить API-ключ '{key_name}'.")
+        click.echo(f"Error: Failed to get API key '{key_name}'.")
 
 
 @apikeys.command()
@@ -105,16 +105,16 @@ def list(format_type: str):
         click.echo(json.dumps(status, indent=2, ensure_ascii=False))
     else:
         # Вывод в виде таблицы
-        click.echo("Статус API-ключей:")
+        click.echo("API Keys Status:")
         click.echo("------------------------")
         for key_name, exists in status.items():
-            status_str = click.style("Настроен", fg="green") if exists else click.style("Не настроен", fg="red")
+            status_str = click.style("Configured", fg="green") if exists else click.style("Not configured", fg="red")
             click.echo(f"{key_name.ljust(12)}: {status_str}")
 
 
 @apikeys.command()
 @click.argument('key_name')
-@click.confirmation_option(prompt="Вы уверены, что хотите удалить этот API-ключ?")
+@click.confirmation_option(prompt="Are you sure you want to delete this API key?")
 def delete(key_name: str):
     """
     Удалить API-ключ из защищенного хранилища.
@@ -127,16 +127,16 @@ def delete(key_name: str):
     
     # Проверка существования ключа
     if not keychain.key_exists(key_name):
-        click.echo(f"Ошибка: API-ключ '{key_name}' не найден.")
+        click.echo(f"Error: API key '{key_name}' not found.")
         return
     
     # Удаление ключа
     result = keychain.delete_api_key(key_name)
     
     if result:
-        click.echo(f"API-ключ '{key_name}' успешно удален.")
+        click.echo(f"API key '{key_name}' successfully deleted.")
     else:
-        click.echo(f"Ошибка: Не удалось удалить API-ключ '{key_name}'.")
+        click.echo(f"Error: Failed to delete API key '{key_name}'.")
 
 
 @apikeys.command()
@@ -160,24 +160,24 @@ def setup(rev_ai: str, claude: str):
     # Сохранение API-ключа Rev.ai
     result_rev = keychain.store_api_key("rev_ai", rev_ai)
     if result_rev:
-        click.echo("API-ключ Rev.ai успешно сохранен в хранилище.")
+        click.echo("Rev.ai API key successfully saved to storage.")
     else:
-        click.echo("Ошибка: Не удалось сохранить API-ключ Rev.ai.")
+        click.echo("Error: Failed to save Rev.ai API key.")
     
     # Сохранение API-ключа Claude
     result_claude = keychain.store_api_key("claude", claude)
     if result_claude:
-        click.echo("API-ключ Claude успешно сохранен в хранилище.")
+        click.echo("Claude API key successfully saved to storage.")
     else:
-        click.echo("Ошибка: Не удалось сохранить API-ключ Claude.")
+        click.echo("Error: Failed to save Claude API key.")
     
     # Итог
     if result_rev and result_claude:
-        click.echo("\nВсе API-ключи успешно настроены.")
+        click.echo("\nAll API keys successfully configured.")
     elif result_rev or result_claude:
-        click.echo("\nНекоторые API-ключи были настроены, но другие не удалось. Проверьте логи для получения подробностей.")
+        click.echo("\nSome API keys were configured, but others failed. Check logs for details.")
     else:
-        click.echo("\nНе удалось настроить API-ключи. Проверьте логи для получения подробностей.")
+        click.echo("\nFailed to configure API keys. Check logs for details.")
 
 
 def register_commands(cli):

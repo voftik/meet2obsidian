@@ -51,7 +51,7 @@ class TestServiceCommand:
             result = runner.invoke(cli, ['service', 'start'])
 
             assert result.exit_code == 0
-            assert "уже запущен" in result.output
+            assert "already running" in result.output
             mock_instance.start.assert_not_called()
 
     def test_service_start_with_autostart(self):
@@ -96,7 +96,7 @@ class TestServiceCommand:
             result = runner.invoke(cli, ['service', 'stop'])
 
             assert result.exit_code == 0
-            assert "не запущен" in result.output
+            assert "not running" in result.output
             mock_instance.stop.assert_not_called()
 
     def test_service_stop_with_force(self):
@@ -450,7 +450,7 @@ class TestLogsCommand:
 
             assert result.exit_code == 0
             mock_open.assert_called_once()
-            assert "очищен" in result.output.lower()
+            assert "cleared" in result.output.lower()
 
     def test_logs_file_not_exists(self):
         """Test logs command when log file doesn't exist."""
@@ -460,7 +460,7 @@ class TestLogsCommand:
             result = runner.invoke(cli, ['logs', 'show'])
 
             assert result.exit_code == 0
-            assert "не найден" in result.output
+            assert "not found" in result.output
 
 
 class TestApiKeysCommand:
@@ -492,7 +492,7 @@ class TestApiKeysCommand:
 
             assert result.exit_code == 0
             mock_instance.store_api_key.assert_called_once_with('rev_ai', 'test_api_key')
-            assert "успешно сохранен" in result.output
+            assert "successfully saved" in result.output
 
     def test_apikeys_get_command_with_masked_output(self):
         """Test apikeys get command with masked output."""
@@ -584,7 +584,7 @@ class TestApiKeysCommand:
 
             assert result.exit_code == 0
             mock_instance.delete_api_key.assert_called_once_with('test_key')
-            assert "успешно удален" in result.output
+            assert "successfully deleted" in result.output
 
     def test_apikeys_setup_command(self):
         """Test apikeys setup command."""
@@ -606,7 +606,7 @@ class TestApiKeysCommand:
             assert mock_instance.store_api_key.call_count == 2
             mock_instance.store_api_key.assert_any_call('rev_ai', 'test_rev_ai_key')
             mock_instance.store_api_key.assert_any_call('claude', 'test_claude_key')
-            assert "Все API-ключи успешно настроены" in result.output
+            assert "All API keys successfully configured" in result.output
 
 
 class TestCompletionCommand:
@@ -646,7 +646,7 @@ class TestCompletionCommand:
             result = runner.invoke(cli, ['completion'])
 
             # Похоже, возвращается код 0, но проверяем сообщение
-            assert "не установлена" in result.output.lower()
+            assert "not installed" in result.output.lower()
 
     def test_completion_install(self):
         """Test installation of completion script."""
@@ -677,7 +677,7 @@ class TestCompletionCommand:
             assert result.exit_code == 0
             mock_get_config.assert_called_once_with('bash')
             assert mock_open.call_count == 2
-            assert "успешно установлено" in result.output.lower()
+            assert "successfully installed" in result.output.lower()
 
 
 class TestArgumentProcessing:

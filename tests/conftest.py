@@ -1,8 +1,8 @@
 """
-Конфигурационный файл для pytest.
-Добавляет родительскую директорию в путь Python для правильного импорта модулей.
-Регистрирует маркеры pytest для разных типов тестов.
-Определяет вспомогательные функции для тестирования.
+Configuration file for pytest.
+Adds the parent directory to the Python path for correct module imports.
+Registers pytest markers for different types of tests.
+Defines helper functions and fixtures for testing.
 """
 
 import os
@@ -17,22 +17,23 @@ sys.path.insert(0, project_root)
 
 def pytest_configure(config):
     """
-    Регистрация пользовательских маркеров pytest.
+    Register custom pytest markers.
     """
-    config.addinivalue_line("markers", "integration: маркер для интеграционных тестов")
-    config.addinivalue_line("markers", "unit: маркер для модульных тестов")
-    config.addinivalue_line("markers", "slow: маркер для медленных тестов")
+    config.addinivalue_line("markers", "integration: marker for integration tests")
+    config.addinivalue_line("markers", "unit: marker for unit tests")
+    config.addinivalue_line("markers", "slow: marker for slow tests")
+    config.addinivalue_line("markers", "launchagent: marker for LaunchAgent tests")
 
 
-# Вспомогательные классы и функции для тестов
+# Helper classes and functions for tests
 
 class AnyStringContaining:
     """
-    Вспомогательный класс для проверки, содержит ли строка указанную подстроку.
+    Helper class to check if a string contains a specified substring.
 
-    Примеры использования:
-        assert log_message == AnyStringContaining("ошибка")
-        mock_logger.error.assert_called_with(AnyStringContaining("не удалось запустить"))
+    Usage examples:
+        assert log_message == AnyStringContaining("error")
+        mock_logger.error.assert_called_with(AnyStringContaining("failed to start"))
     """
 
     def __init__(self, substring):
@@ -49,11 +50,11 @@ class AnyStringContaining:
 
 class AnyStringMatching:
     """
-    Вспомогательный класс для проверки, соответствует ли строка указанному регулярному выражению.
+    Helper class to check if a string matches a specified regular expression.
 
-    Примеры использования:
-        assert log_message == AnyStringMatching(r"Error \d+")
-        mock_logger.error.assert_called_with(AnyStringMatching(r"^Не удалось.*$"))
+    Usage examples:
+        assert log_message == AnyStringMatching(r"Error \\d+")
+        mock_logger.error.assert_called_with(AnyStringMatching(r"^Failed to.*$"))
     """
 
     def __init__(self, pattern):
@@ -73,10 +74,35 @@ class AnyStringMatching:
 @pytest.fixture(autouse=True)
 def add_helpers(monkeypatch):
     """
-    Добавляет вспомогательные функции и классы к pytest.
-    Это позволяет использовать их в тестах без необходимости импорта.
+    Adds helper functions and classes to pytest.
+    This allows using them in tests without needing to import them.
     """
-    # Создаем пространство имен helpers и добавляем туда вспомогательные функции
+    # Create helpers namespace and add helper functions
     pytest.helpers = type('helpers', (), {})
     pytest.helpers.ANY_STRING_CONTAINING = AnyStringContaining
     pytest.helpers.ANY_STRING_MATCHING = AnyStringMatching
+
+
+# LaunchAgent testing fixtures
+@pytest.fixture
+def temp_plist_path(tmp_path):
+    """
+    Fixture that provides a temporary path for a LaunchAgent plist file.
+    """
+    plist_path = tmp_path / "com.test.meet2obsidian.plist"
+    return str(plist_path)
+
+
+@pytest.fixture
+def mock_launchctl():
+    """
+    Fixture that mocks the launchctl command.
+    """
+    with patch('subprocess.run') as mock_run:
+        # Mock successful operation
+        mock_run.return_value = type('MockCompletedProcess', (), {
+            'returncode': 0,
+            'stdout': '',
+            'stderr': ''
+        })
+        yield mock_run

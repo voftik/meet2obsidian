@@ -93,18 +93,18 @@ def show(count: int, level: str, format_type: str, log_file: Optional[str]):
         log_file = os.path.expanduser("~/Library/Logs/meet2obsidian/meet2obsidian.log")
     
     if not os.path.exists(log_file):
-        click.echo(f"Файл лога не найден: {log_file}")
+        click.echo(f"Log file not found: {log_file}")
         return
     
     # Получение логов
     logs = get_last_logs(log_file, count, level)
     
     if not logs:
-        click.echo("Не найдено подходящих записей лога.")
+        click.echo("No matching log entries found.")
         return
     
     # Форматирование и отображение логов
-    click.echo(f"Показано последних {len(logs)} записей лога (Уровень: {level.upper()} и выше):")
+    click.echo(f"Showing last {len(logs)} log entries (Level: {level.upper()} and above):")
     
     for log_entry in logs:
         click.echo(format_log_entry(log_entry, format_type))
@@ -112,7 +112,7 @@ def show(count: int, level: str, format_type: str, log_file: Optional[str]):
 
 @logs.command()
 @click.option("--log-file", "-o", help="Пользовательский путь к файлу лога.")
-@click.confirmation_option(prompt="Вы уверены, что хотите очистить файл лога?")
+@click.confirmation_option(prompt="Are you sure you want to clear the log file?")
 def clear(log_file: Optional[str]):
     """
     Очистить файл лога.
@@ -125,15 +125,15 @@ def clear(log_file: Optional[str]):
         log_file = os.path.expanduser("~/Library/Logs/meet2obsidian/meet2obsidian.log")
     
     if not os.path.exists(log_file):
-        click.echo(f"Файл лога не найден: {log_file}")
+        click.echo(f"Log file not found: {log_file}")
         return
     
     # Очистка файла лога
     try:
         open(log_file, 'w').close()
-        click.echo(f"Файл лога очищен: {log_file}")
+        click.echo(f"Log file cleared: {log_file}")
     except Exception as e:
-        click.echo(f"Ошибка при очистке файла лога: {str(e)}")
+        click.echo(f"Error clearing log file: {str(e)}")
 
 
 def register_commands(cli):

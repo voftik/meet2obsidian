@@ -162,10 +162,14 @@ Meet2Obsidian offers several customization options:
 - [x] Implementation of structured logging system with JSON formatting and rotation
 - [x] Comprehensive testing suite for logging functionality
 - [x] CLI commands for log management and viewing
+- [x] Implementation of ApplicationManager for process control and monitoring
+- [x] LaunchAgent integration for macOS autostart functionality
+- [x] Enhanced CLI commands for service management with autostart support
 
 ### Coming Soon
 - [ ] Support for additional video/audio formats
 - [ ] Integration with alternative transcription services
+- [ ] File monitoring implementation for automatic video processing
 - [ ] Cross-linking between notes based on content context using AI relevance agent
   - Dedicated AI agent evaluates existing vault notes for contextual relevance
   - Creates bidirectional links with related content

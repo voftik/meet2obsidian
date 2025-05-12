@@ -6,49 +6,49 @@ from typing import Dict, Any, List, Optional, Union
 from unittest.mock import MagicMock
 
 class ConfigError(Exception):
-    """Исключение для ошибок конфигурации."""
+    """Exception for configuration errors."""
     pass
 
 class ConfigManager:
     """
-    Управляет конфигурацией приложения meet2obsidian.
-    Предоставляет методы для загрузки, сохранения и доступа к настройкам.
+    Manages the meet2obsidian application configuration.
+    Provides methods for loading, saving, and accessing settings.
     """
-    
+
     def __init__(self, config_path: Optional[str] = None, logger=None):
         """
-        Инициализирует ConfigManager с путем к файлу конфигурации.
-        
+        Initializes the ConfigManager with a configuration file path.
+
         Args:
-            config_path (str, optional): Путь к файлу конфигурации. Если не указан,
-                                        используется путь по умолчанию.
-            logger (logging.Logger): Опциональный объект логгера
+            config_path (str, optional): Path to the configuration file. If not specified,
+                                        the default path is used.
+            logger (logging.Logger): Optional logger object
         """
-        # Определяем, нужно ли автоматически загружать конфигурацию
-        # Для тестовых случаев, когда путь задан явно, автозагрузку отключаем
+        # Determine if we should automatically load the configuration
+        # For test cases when the path is explicitly provided, we disable auto-loading
         self._should_load = config_path is None
-        
+
         if config_path is None:
-            # Путь по умолчанию
+            # Default path
             home_dir = os.path.expanduser("~")
             config_dir = os.path.join(home_dir, ".config", "meet2obsidian")
             self.config_path = os.path.join(config_dir, "config.json")
         else:
             self.config_path = config_path
-            
+
         self.logger = logger or logging.getLogger(__name__)
         self.config = {}
-        
-        # Инициализация конфигурации только если флаг включен
+
+        # Initialize configuration only if the flag is enabled
         if self._should_load:
             self._load_or_create_default()
-    
+
     def _load_or_create_default(self) -> Dict[str, Any]:
         """
-        Загружает конфигурацию или создает конфигурацию по умолчанию.
-        
+        Loads the configuration or creates a default configuration.
+
         Returns:
-            dict: Загруженная конфигурация или конфигурация по умолчанию
+            dict: Loaded configuration or default configuration
         """
         try:
             return self.load_config()
@@ -56,213 +56,241 @@ class ConfigManager:
             default_config = self._create_default_config()
             self.config = default_config
             return default_config
-    
+
     def load_config(self) -> Dict[str, Any]:
         """
-        Загружает конфигурацию из файла.
-        
+        Loads the configuration from a file.
+
         Returns:
-            dict: Загруженная конфигурация
-            
+            dict: Loaded configuration
+
         Raises:
-            ConfigError: Если файл не существует, пуст или содержит ошибки.
+            ConfigError: If the file does not exist, is empty, or contains errors.
         """
-        # Проверяем существование файла конфигурации
+        # Check if the configuration file exists
         if not os.path.exists(self.config_path):
-            raise ConfigError(f"Файл конфигурации не существует: {self.config_path}")
-        
-        # Загружаем конфигурацию из файла
+            raise ConfigError(f"Configuration file does not exist: {self.config_path}")
+
+        # Load the configuration from the file
         with open(self.config_path, 'r', encoding='utf-8') as f:
             file_content = f.read()
-            
-            # Проверяем наличие содержимого
+
+            # Check if the file has content
             if not file_content.strip():
-                self.logger.warning(f"Файл конфигурации пуст: {self.config_path}")
-                raise ConfigError(f"Файл конфигурации пуст: {self.config_path}")
-            
-            # Используем commentjson для поддержки комментариев в JSON
+                self.logger.warning(f"Configuration file is empty: {self.config_path}")
+                raise ConfigError(f"Configuration file is empty: {self.config_path}")
+
+            # Use commentjson to support comments in JSON
             try:
                 config = commentjson.loads(file_content)
-                self.logger.debug(f"Конфигурация успешно загружена из {self.config_path}")
+                self.logger.debug(f"Configuration successfully loaded from {self.config_path}")
                 self.config = config
                 return config
             except (json.JSONDecodeError, ValueError) as e:
-                self.logger.error(f"Ошибка при разборе JSON: {str(e)}")
-                raise ConfigError(f"Ошибка при разборе JSON: {str(e)}")
-    
+                self.logger.error(f"Error parsing JSON: {str(e)}")
+                raise ConfigError(f"Error parsing JSON: {str(e)}")
+
     def save_config(self, config: Optional[Dict[str, Any]] = None) -> bool:
         """
-        Сохраняет конфигурацию в файл.
-        
+        Saves the configuration to a file.
+
         Args:
-            config (dict, optional): Конфигурация для сохранения. 
-                                    Если None, сохраняет текущую конфигурацию.
-            
+            config (dict, optional): Configuration to save.
+                                    If None, saves the current configuration.
+
         Returns:
-            bool: True в случае успеха, False при ошибке
+            bool: True on success, False on error
         """
         config_to_save = config if config is not None else self.config
-        
+
         if config_to_save is None:
-            self.logger.error("Нет конфигурации для сохранения")
+            self.logger.error("No configuration to save")
             return False
-        
+
         try:
-            # Создаем директории для файла конфигурации, если они не существуют
+            # Create directories for the configuration file if they don't exist
             os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
-            
-            # Сохраняем конфигурацию в файл
+
+            # Save the configuration to the file
             with open(self.config_path, 'w', encoding='utf-8') as f:
                 json.dump(config_to_save, f, indent=4, ensure_ascii=False)
-            
-            # Обновляем текущую конфигурацию
+
+            # Update the current configuration
             if config is not None:
                 self.config = config
-                
-            self.logger.debug(f"Конфигурация успешно сохранена в {self.config_path}")
+
+            self.logger.debug(f"Configuration successfully saved to {self.config_path}")
             return True
         except Exception as e:
-            self.logger.error(f"Ошибка при сохранении конфигурации: {str(e)}")
+            self.logger.error(f"Error saving configuration: {str(e)}")
             return False
-    
+
     def get_value(self, key: str, default: Any = None) -> Any:
         """
-        Получает значение конфигурации по ключу. Ключ может быть вложенным путем с точками.
-        Например: "paths.video_directory"
-        
+        Gets a configuration value by key. The key can be a dot-separated nested path.
+        For example: "paths.video_directory"
+
         Args:
-            key (str): Ключ конфигурации
-            default: Значение по умолчанию, возвращаемое если ключ не найден
-            
+            key (str): Configuration key
+            default: Default value to return if the key is not found
+
         Returns:
-            Значение конфигурации или значение по умолчанию, если ключ не найден
+            Configuration value or the default value if the key is not found
         """
-        # Разбиваем ключ на части
+        # Split the key into parts
         key_parts = key.split('.')
-        
-        # Начинаем с корня конфигурации
+
+        # Start from the root of the configuration
         current = self.config
-        
-        # Проходим по частям ключа
+
+        # Navigate through the key parts
         for part in key_parts:
             if isinstance(current, dict) and part in current:
                 current = current[part]
             else:
                 return default
-        
+
         return current
-    
+
     def set_value(self, key: str, value: Any) -> bool:
         """
-        Устанавливает значение конфигурации по ключу. Ключ может быть вложенным путем с точками.
-        Например: "paths.video_directory" = "/path/to/videos"
-        
+        Sets a configuration value by key. The key can be a dot-separated nested path.
+        For example: "paths.video_directory" = "/path/to/videos"
+
         Args:
-            key (str): Ключ конфигурации
-            value: Значение для установки
-            
+            key (str): Configuration key
+            value: Value to set
+
         Returns:
-            bool: True в случае успеха, False при ошибке
+            bool: True on success, False on error
         """
-        # Специальная обработка для тестового сценария, когда config является моком
+        # Special handling for test scenario when config is a mock
         if isinstance(self.config, MagicMock):
             try:
                 key_part = key.split(".")[0]
-                self.config[key_part]  # Это должно вызвать исключение для теста
+                self.config[key_part]  # This should trigger an exception for testing
                 return True
             except Exception as e:
-                self.logger.error(f"Ошибка при установке значения для {key}: {str(e)}")
+                self.logger.error(f"Error setting value for {key}: {str(e)}")
                 return False
-                
+
         try:
-            # Разбиваем ключ на части
+            # Split the key into parts
             key_parts = key.split('.')
-            
-            # Начинаем с корня конфигурации
+
+            # Start from the root of the configuration
             current = self.config
-            
-            # Проходим по всем частям ключа кроме последней
+
+            # Navigate through all key parts except the last one
             for part in key_parts[:-1]:
-                # Если текущая часть не существует, создаем пустой словарь
+                # If the current part doesn't exist, create an empty dictionary
                 if part not in current:
                     current[part] = {}
-                # Если текущая часть не является словарем, не можем продолжить
+                # If the current part is not a dictionary, we can't continue
                 elif not isinstance(current[part], dict):
-                    self.logger.error(f"Невозможно установить значение для {key}: путь содержит не-словарь")
+                    self.logger.error(f"Cannot set value for {key}: path contains non-dictionary")
                     return False
-                
+
                 current = current[part]
-            
-            # Устанавливаем значение для последней части ключа
+
+            # Set the value for the last key part
             current[key_parts[-1]] = value
             return True
-            
+
         except Exception as e:
-            self.logger.error(f"Ошибка при установке значения для {key}: {str(e)}")
+            self.logger.error(f"Error setting value for {key}: {str(e)}")
             return False
-    
+
     def get_config(self) -> Dict[str, Any]:
         """
-        Получает текущую конфигурацию.
+        Gets the current configuration.
 
         Returns:
-            dict: Текущая конфигурация
+            dict: Current configuration
         """
         return self.config
 
     def validate_config(self) -> List[str]:
         """
-        Проверяет конфигурацию на наличие необходимых полей и корректность значений.
+        Validates the configuration for required fields and correct values.
 
         Returns:
-            list: Список сообщений об ошибках, пустой список если ошибок нет
+            list: List of error messages, empty if no errors
         """
         errors = []
 
-        # Проверяем наличие основных разделов
+        # Check for required sections
         required_sections = ['paths', 'api', 'processing', 'system']
         for section in required_sections:
             if section not in self.config:
-                errors.append(f"Отсутствует обязательный раздел: {section}")
+                errors.append(f"Missing required section: {section}")
 
-        # API валидации определены тестами, не добавляем лишних проверок
+        # API validations
         if 'api' in self.config:
-            # Rev.ai и Claude разделы
+            # Rev.ai and Claude sections
             if 'rev_ai' not in self.config['api']:
-                errors.append("Отсутствует обязательный раздел: api.rev_ai")
+                errors.append("Missing required section: api.rev_ai")
             if 'claude' not in self.config['api']:
-                errors.append("Отсутствует обязательный раздел: api.claude")
+                errors.append("Missing required section: api.claude")
 
-            # Проверка temperature
+            # Temperature check
             if 'claude' in self.config['api'] and isinstance(self.config['api']['claude'], dict):
                 if 'temperature' in self.config['api']['claude']:
                     temp = self.config['api']['claude']['temperature']
                     if not isinstance(temp, (int, float)) or temp < 0 or temp > 1:
-                        errors.append("api.claude.temperature должно быть числом от 0 до 1")
+                        errors.append("api.claude.temperature must be a number between 0 and 1")
 
-        # Проверяем типы других важных полей
+        # Check types of other important fields
         if 'processing' in self.config:
-            if 'delete_video_files' in self.config['processing'] and not isinstance(self.config['processing']['delete_video_files'], bool):
-                errors.append("processing.delete_video_files должно быть логическим")
-            if 'delete_audio_files' in self.config['processing'] and not isinstance(self.config['processing']['delete_audio_files'], bool):
-                errors.append("processing.delete_audio_files должно быть логическим")
-            if 'process_interval' in self.config['processing'] and not isinstance(self.config['processing']['process_interval'], (int, float)):
-                errors.append("processing.process_interval должно быть числом")
+            # Boolean checks
+            for bool_field in ['delete_video_files', 'delete_audio_files']:
+                if bool_field in self.config['processing'] and not isinstance(self.config['processing'][bool_field], bool):
+                    errors.append(f"processing.{bool_field} must be a boolean")
+
+            # Numeric checks
+            for num_field in ['max_video_duration', 'poll_interval']:
+                if num_field in self.config['processing'] and not isinstance(self.config['processing'][num_field], (int, float)):
+                    errors.append(f"processing.{num_field} must be a number")
+
+            # List checks
+            if 'file_patterns' in self.config['processing']:
+                if not isinstance(self.config['processing']['file_patterns'], list):
+                    errors.append("processing.file_patterns must be a list")
+                else:
+                    for pattern in self.config['processing']['file_patterns']:
+                        if not isinstance(pattern, str):
+                            errors.append("All items in processing.file_patterns must be strings")
+                            break
+
+        # System checks
+        if 'system' in self.config:
+            if 'autostart' in self.config['system'] and not isinstance(self.config['system']['autostart'], bool):
+                errors.append("system.autostart must be a boolean")
+
+            if 'loglevel' in self.config['system'] and not isinstance(self.config['system']['loglevel'], str):
+                errors.append("system.loglevel must be a string")
+
+            if 'notifications' in self.config['system'] and not isinstance(self.config['system']['notifications'], bool):
+                errors.append("system.notifications must be a boolean")
+
+            if 'max_errors' in self.config['system'] and not isinstance(self.config['system']['max_errors'], int):
+                errors.append("system.max_errors must be an integer")
 
         return errors
     
     def _create_default_config(self) -> Dict[str, Any]:
         """
-        Создает конфигурацию по умолчанию.
-        
+        Creates a default configuration.
+
         Returns:
-            dict: Конфигурация по умолчанию
+            dict: Default configuration
         """
-        # Значения по умолчанию
+        # Default values
         return {
             "paths": {
                 "video_directory": "",
-                "obsidian_vault": ""
+                "obsidian_vault": "",
+                "output_directory": ""
             },
             "api": {
                 "rev_ai": {
@@ -277,11 +305,15 @@ class ConfigManager:
             "processing": {
                 "delete_video_files": True,
                 "delete_audio_files": True,
-                "max_video_duration": 14400  # 4 часа в секундах
+                "max_video_duration": 14400,  # 4 hours in seconds
+                "poll_interval": 60,  # Directory polling interval in seconds
+                "file_patterns": ["*.mp4", "*.mov", "*.webm", "*.mkv"]
             },
             "system": {
                 "autostart": False,
                 "loglevel": "info",
-                "notifications": True
+                "notifications": True,
+                "pid_file": "~/Library/Application Support/meet2obsidian/meet2obsidian.pid",
+                "max_errors": 10  # Maximum number of errors to keep in history
             }
         }
