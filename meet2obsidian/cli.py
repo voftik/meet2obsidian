@@ -20,6 +20,7 @@ from meet2obsidian.cli_commands import (
     status_command,
     config_command,
     process_command,
+    cache_command,
     completion
 )
 
@@ -121,6 +122,7 @@ service_command.register_commands(cli)
 status_command.register_commands(cli)
 config_command.register_commands(cli)
 process_command.register_commands(cli)
+cache_command.register_commands(cli)
 completion.register_commands(cli)
 
 def main():

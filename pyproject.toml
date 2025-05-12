@@ -32,6 +32,7 @@ dependencies = [
     "rich>=13.0.0",
     "click-completion>=0.5.2",
     "pyyaml>=6.0",
+    "humanize>=4.6.0",
 ]
 
 [project.optional-dependencies]

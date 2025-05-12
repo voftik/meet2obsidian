@@ -286,6 +286,7 @@ graph TD
     Meet2ObsidianCLICommands --> Meet2ObsidianCLICommandsConfig["config_command.py"]
     Meet2ObsidianCLICommands --> Meet2ObsidianCLICommandsCompletion["completion.py"]
     Meet2ObsidianCLICommands --> Meet2ObsidianCLICommandsProcess["process_command.py"]
+    Meet2ObsidianCLICommands --> Meet2ObsidianCLICommandsCache["cache_command.py"]
 
     %% API Package
     Meet2ObsidianAPI --> Meet2ObsidianAPIInit["__init__.py"]
@@ -471,6 +472,7 @@ Key functional components:
   - `cli_commands/apikeys_command.py`: API key management ✅
   - `cli_commands/completion.py`: Shell completion for CLI commands ✅
   - `cli_commands/process_command.py`: Processing queue management commands ✅
+  - `cli_commands/cache_command.py`: Cache management commands ✅
 - **Utility Scripts**:
   - `scripts/check_videos.py`: Video validation tool ✅
   - `scripts/setup_api_keys.py`: API key setup utility ✅
@@ -637,4 +639,14 @@ Key functional components:
   - ✅ Task 7: Add thread-safety and documentation
   - ✅ Task 8: Create comprehensive test report and documentation
 
-Last Updated: 2025-05-25
+- **Epic 26**: Cache system implementation ✅ (2025-05-26)
+  - ✅ Task 1: Create CacheManager class
+  - ✅ Task 2: Implement storing objects in cache
+  - ✅ Task 3: Implement retrieving objects from cache
+  - ✅ Task 4: Implement cleaning up outdated data
+  - ✅ Task 5: Create CLI commands for cache management
+  - ✅ Task 6: Implement Rev.ai client with caching
+  - ✅ Task 7: Implement Claude client with caching
+  - ✅ Task 8: Create cache usage examples
+
+Last Updated: 2025-05-26
