@@ -225,6 +225,7 @@ graph TD
     DocsDevComponents --> DocsDevComponentsProcessingQueue["ProcessingQueue.md"]
     DocsDevComponents --> DocsDevComponentsProcessingQueueCLI["ProcessingQueueCLI.md"]
     DocsDevComponents --> DocsDevComponentsAudioExtraction["AudioExtraction.md"]
+    DocsDevComponents --> DocsDevComponentsCacheSystem["CacheSystem.md"]
     DocsDevSetup --> DocsDevSetupAPIKeys["API Keys Setup.md"]
     DocsDevSetup --> DocsDevSetupVideoVal["Video Validation Tool.md"]
 
@@ -253,6 +254,7 @@ graph TD
     DocsUserUsage --> DocsUserUsageAPIKeys["api-keys-management.md"]
     DocsUserUsage --> DocsUserUsageCLI["cli-commands.md"]
     DocsUserUsage --> DocsUserUsageFileManagement["file-management.md"]
+    DocsUserUsage --> DocsUserUsageCaching["caching.md"]
 
     %% Main Python package structure
     Meet2Obsidian --> Meet2ObsidianInit["__init__.py"]
@@ -326,8 +328,10 @@ graph TD
     TmpFiles --> TmpEpic18Report["epic18_file_watcher_implementation_report.md"]
     TmpFiles --> TmpEpic19Report["epic19_processing_queue_report.md"]
     TmpFiles --> TmpEpic18Details["EPIC18_Implementation_Details.md"]
+    TmpFiles --> TmpEpic25Report["cache_system_tests_summary.md"]
     TmpFiles --> TmpFileMonitorTestCompat["FileMonitor_Test_Compatibility_Report.md"]
     TmpFiles --> TmpEpicsSummary["completed_epics_summary.md"]
+    TmpFiles --> TmpRefactoringReport["refactoring_epic_summary.md"]
 
     %% Tests
     Tests --> TestsInit["__init__.py"]
@@ -353,6 +357,7 @@ graph TD
     TestsIntegration --> TestsIntegrationProcessingQueueSimplified["test_processing_queue_simplified.py"]
     TestsIntegration --> TestsIntegrationPersistence["test_persistence.py"]
     TestsIntegration --> TestsIntegrationAudioExtraction["test_audio_extraction_integration.py"]
+    TestsIntegration --> TestsIntegrationCache["test_cache_integration.py"]
 
     %% Unit Tests
     TestsUnit --> TestsUnitInit["__init__.py"]
@@ -376,6 +381,7 @@ graph TD
     TestsUnit --> TestsUnitSyntheticVideos["test_synthetic_videos.py"]
     TestsUnit --> TestsUnitFileManager["test_file_manager.py"]
     TestsUnit --> TestsUnitFileManagerExtended["test_file_manager_extended.py"]
+    TestsUnit --> TestsUnitCacheManager["test_cache_manager.py"]
 
     %% Test Fixtures
     TestsFixtures --> TestsFixturesConfig["test_config.json"]
@@ -400,7 +406,7 @@ graph TD
     class Docs,DocsAPI,DocsAssets,DocsDev,DocsExamples,DocsInternal,DocsUser doc
     class Tests,TestsIntegration,TestsUnit test
     class ConfigFiles,ProjectToml,Requirements,Setup,License,Readme,ClaudeMD,ProjectStructureMD config
-    class TmpFiles,TmpConfigFixes,TmpLoggingDocs tmp
+    class TmpFiles,TmpConfigFixes,TmpLoggingDocs,TmpEpic25Report,TmpRefactoringReport tmp
 ```
 
 ## Implementation Status
@@ -438,6 +444,7 @@ The project is in active development. Current status:
   - Comprehensive ApplicationManager tests added ✅
   - LaunchAgent and FileMonitor tests added ✅
   - Processing Queue system tests added ✅
+  - Cache system tests added with over 80% coverage ✅
 
 - **Examples**:
   - Example of logging functionality
@@ -450,6 +457,7 @@ Key functional components:
 - `config.py`: Configuration management system with JSON support and validation ✅
 - `utils/logging.py`: Structured logging system with JSON format and rotation ✅
 - `utils/file_manager.py`: Comprehensive file management with secure operations and error handling ✅
+- `cache.py`: Thread-safe caching system for API responses and processed data ✅
 - `core.py`: ApplicationManager class for process monitoring and control ✅
 - `launchagent.py`: LaunchAgentManager for macOS autostart integration ✅
 - `monitor.py`: FileMonitor for automatic video file detection and processing ✅
@@ -619,4 +627,14 @@ Key functional components:
   - ✅ Task 10: Create example application demonstrating FileManager usage
   - ✅ Task 11: Update project documentation with FileManager details
 
-Last Updated: 2025-05-22
+- **Epic 25**: Cache system tests implementation ✅ (2025-05-25)
+  - ✅ Task 1: Create tests for storing objects in cache
+  - ✅ Task 2: Create tests for retrieving objects from cache
+  - ✅ Task 3: Create tests for cache invalidation
+  - ✅ Task 4: Create tests for cleaning up outdated data
+  - ✅ Task 5: Implement cache manager with all required functionality
+  - ✅ Task 6: Create integration tests for cache with API clients
+  - ✅ Task 7: Add thread-safety and documentation
+  - ✅ Task 8: Create comprehensive test report and documentation
+
+Last Updated: 2025-05-25
