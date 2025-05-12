@@ -1,0 +1,65 @@
+# Enhanced meet2obsidian configuration with processing pipeline settings
+paths:
+  # Directory to monitor for new video files
+  video_directory: "/Users/username/Documents/meet_records"
+  # Obsidian vault path for note generation
+  obsidian_vault: "/Users/username/Documents/Obsidian/MainVault"
+  # Directory for extracted audio files
+  audio_directory: "/Users/username/Documents/meet2obsidian/audio"
+  # Cache directory for storing processing results
+  cache_directory: "/Users/username/Library/Caches/meet2obsidian"
+  # Log directory
+  log_directory: "/Users/username/Library/Logs/meet2obsidian"
+
+api:
+  rev_ai:
+    job_timeout: 3600
+    max_retries: 3
+  claude:
+    model: "claude-3-opus-20240229"
+    temperature: 0.1
+
+processing:
+  # File monitoring settings
+  file_patterns: ["*.mp4", "*.mov", "*.webm", "*.mkv"]
+  poll_interval: 60  # seconds
+  min_file_age_seconds: 5  # Consider files stable after 5 seconds
+
+  # Processing queue settings
+  max_concurrent_files: 3  # Process up to 3 files simultaneously
+  max_retries: 3  # Retry failed files up to 3 times
+  
+  # Deletion settings
+  delete_video_files: true
+  delete_audio_files: true
+
+audio:
+  # Audio extraction settings
+  format: "m4a"  # Format for extracted audio (m4a, mp3, wav, ogg)
+  quality: "medium"  # Quality profile (voice, low, medium, high)
+  
+  # Advanced audio settings (optional)
+  voice_quality:
+    format: "m4a"
+    bitrate: "64k"
+    sample_rate: 22050
+    channels: 1
+  
+  medium_quality:
+    format: "m4a"
+    bitrate: "192k"
+    sample_rate: 44100
+    channels: 2
+
+system:
+  autostart: true
+  loglevel: "info"  # debug, info, warning, error, critical
+  notifications: true
+  
+  # Logging configuration
+  logging:
+    console: true
+    file: true
+    rotation: true
+    max_file_size: 10485760  # 10 MB
+    backup_count: 5

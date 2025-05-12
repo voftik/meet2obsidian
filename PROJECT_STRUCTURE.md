@@ -23,6 +23,8 @@ meet2obsidian/
 │   │       └── component-template.md
 │   ├── dev/
 │   │   ├── README.md
+│   │   ├── architecture/
+│   │   │   └── processing-pipeline.md
 │   │   ├── components/
 │   │   │   ├── API Key Management.md
 │   │   │   ├── API Key Security.md
@@ -34,14 +36,16 @@ meet2obsidian/
 │   │   │   ├── LaunchAgent.md
 │   │   │   ├── Logging.md
 │   │   │   ├── ProcessingQueue.md
-│   │   │   └── ProcessingQueueCLI.md
+│   │   │   ├── ProcessingQueueCLI.md
+│   │   │   └── processing-pipeline.md
 │   │   └── setup/
 │   │       ├── API Keys Setup.md
 │   │       └── Video Validation Tool.md
 │   ├── development.md
 │   ├── examples/
 │   │   ├── config-examples/
-│   │   │   └── basic-config.yaml
+│   │   │   ├── basic-config.yaml
+│   │   │   └── pipeline-config.yaml
 │   │   └── template-examples/
 │   │       └── default.md.j2
 │   ├── index.md
@@ -100,6 +104,7 @@ meet2obsidian/
 │   │   └── obsidian.py
 │   ├── processing/
 │   │   ├── __init__.py
+│   │   ├── pipeline.py
 │   │   ├── processor.py
 │   │   ├── queue.py
 │   │   └── state.py
@@ -273,6 +278,7 @@ graph TD
 
     %% Processing Package
     Meet2ObsidianProcessing --> Meet2ObsidianProcessingInit["__init__.py"]
+    Meet2ObsidianProcessing --> Meet2ObsidianProcessingPipeline["pipeline.py"]
     Meet2ObsidianProcessing --> Meet2ObsidianProcessingProcessor["processor.py"]
     Meet2ObsidianProcessing --> Meet2ObsidianProcessingQueue["queue.py"]
     Meet2ObsidianProcessing --> Meet2ObsidianProcessingState["state.py"]
@@ -330,6 +336,7 @@ graph TD
     TmpFiles --> TmpEpic19Report["epic19_processing_queue_report.md"]
     TmpFiles --> TmpEpic18Details["EPIC18_Implementation_Details.md"]
     TmpFiles --> TmpEpic25Report["cache_system_tests_summary.md"]
+    TmpFiles --> TmpEpic27Report["epic27_implementation_summary.md"]
     TmpFiles --> TmpFileMonitorTestCompat["FileMonitor_Test_Compatibility_Report.md"]
     TmpFiles --> TmpEpicsSummary["completed_epics_summary.md"]
     TmpFiles --> TmpRefactoringReport["refactoring_epic_summary.md"]
@@ -348,6 +355,7 @@ graph TD
     %% Integration Tests
     TestsIntegration --> TestsIntegrationInit["__init__.py"]
     TestsIntegration --> TestsIntegrationPipeline["test_pipeline.py"]
+    TestsIntegration --> TestsIntegrationProcessingPipeline["test_processing_pipeline.py"]
     TestsIntegration --> TestsIntegrationSecurity["test_security_integration.py"]
     TestsIntegration --> TestsIntegrationCLI["test_cli_integration.py"]
     TestsIntegration --> TestsIntegrationAppManager["test_application_manager_integration.py"]
@@ -383,6 +391,7 @@ graph TD
     TestsUnit --> TestsUnitFileManager["test_file_manager.py"]
     TestsUnit --> TestsUnitFileManagerExtended["test_file_manager_extended.py"]
     TestsUnit --> TestsUnitCacheManager["test_cache_manager.py"]
+    TestsUnit --> TestsUnitProcessingPipeline["test_processing_pipeline.py"]
 
     %% Test Fixtures
     TestsFixtures --> TestsFixturesConfig["test_config.json"]
@@ -462,7 +471,11 @@ Key functional components:
 - `core.py`: ApplicationManager class for process monitoring and control ✅
 - `launchagent.py`: LaunchAgentManager for macOS autostart integration ✅
 - `monitor.py`: FileMonitor for automatic video file detection and processing ✅
-- `processing/`: Processing Queue system for file handling with priority and error recovery ✅
+- `processing/`: Processing components for file handling ✅
+  - `processing/queue.py`: Processing Queue with priority and error recovery ✅
+  - `processing/processor.py`: File processor for thread-safe file processing ✅
+  - `processing/state.py`: State tracking for processing queue ✅
+  - `processing/pipeline.py`: Integrated processing pipeline connecting all components ✅
 - `cli.py`: Main CLI entry point with modular command structure ✅
 - **CLI Command Modules**:
   - `cli_commands/service_command.py`: Service start/stop commands with autostart support ✅
@@ -649,4 +662,15 @@ Key functional components:
   - ✅ Task 7: Implement Claude client with caching
   - ✅ Task 8: Create cache usage examples
 
-Last Updated: 2025-05-26
+- **Epic 27**: Integration of file processing components ✅ (2025-05-12)
+  - ✅ Task 1: Connect FileWatcher with FileQueue
+  - ✅ Task 2: Integrate AudioExtractor with the processing pipeline
+  - ✅ Task 3: Configure logging for all components
+  - ✅ Task 4: Create integrated ProcessingPipeline class
+  - ✅ Task 5: Update ApplicationManager to use ProcessingPipeline
+  - ✅ Task 6: Create integration tests for processing pipeline
+  - ✅ Task 7: Add robust error handling across component boundaries
+  - ✅ Task 8: Implement caching for processed files
+  - ✅ Task 9: Update documentation with new architecture
+
+Last Updated: 2025-05-12

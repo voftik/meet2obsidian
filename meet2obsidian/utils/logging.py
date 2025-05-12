@@ -250,18 +250,18 @@ def get_last_logs(log_file: str, count: int = 50, level: str = "info") -> List[D
 def create_diagnostic_log_entry(logger: structlog.stdlib.BoundLogger, environment: Dict[str, Any] = None) -> None:
     """
     Создает диагностическую запись в логе с информацией о системе.
-    
+
     Args:
         logger: Структурированный логгер для использования
         environment: Дополнительная информация о среде для включения
-    
+
     Примеры:
         >>> logger = get_logger("diagnostics")
         >>> create_diagnostic_log_entry(logger, {"app_version": "1.0.0"})
     """
     import platform
     import datetime
-    
+
     diagnostic_info = {
         "system": platform.system(),
         "release": platform.release(),
@@ -271,8 +271,67 @@ def create_diagnostic_log_entry(logger: structlog.stdlib.BoundLogger, environmen
         "timestamp": datetime.datetime.now().isoformat(),
         "pid": os.getpid()
     }
-    
+
     if environment:
         diagnostic_info.update(environment)
-    
+
     logger.info("Диагностическая информация", **diagnostic_info)
+
+
+def setup_component_logging(
+    component_name: str,
+    log_dir: Optional[str] = None,
+    log_level: str = "info",
+    context: Optional[Dict[str, Any]] = None
+) -> structlog.stdlib.BoundLogger:
+    """
+    Configure logging for a specific component with proper context.
+
+    This function sets up logging for a specific component using the structlog
+    library with proper context information, ensuring consistent logging across
+    all application components.
+
+    Args:
+        component_name: Name of the component (e.g., "file_watcher", "processor")
+        log_dir: Directory for log files. If None, only console logging is used
+        log_level: Logging level ("debug", "info", "warning", "error", "critical")
+        context: Additional context information to add to all log entries
+
+    Returns:
+        structlog.stdlib.BoundLogger: Configured logger for the component
+
+    Examples:
+        >>> logger = setup_component_logging("file_watcher", "/path/to/logs")
+        >>> logger.info("Started watching directory", directory="/path/to/watch")
+    """
+    # Default context
+    default_context = {
+        "component": component_name
+    }
+
+    # Merge with additional context if provided
+    if context:
+        default_context.update(context)
+
+    # Configure log file path if a directory is provided
+    log_file = None
+    if log_dir:
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, f"meet2obsidian.log")
+
+    # Set up logging
+    setup_logging(
+        log_level=log_level,
+        log_file=log_file,
+        rotate_logs=True,
+        max_bytes=10 * 1024 * 1024,  # 10 MB
+        backup_count=5
+    )
+
+    # Create logger with context
+    logger = get_logger(component_name, **default_context)
+
+    # Add diagnostic information
+    create_diagnostic_log_entry(logger, {"component_name": component_name})
+
+    return logger

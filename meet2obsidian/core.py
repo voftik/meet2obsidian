@@ -15,8 +15,9 @@ import datetime
 import logging
 from typing import Dict, List, Any, Optional, Callable, Union, Tuple
 
-from meet2obsidian.utils.logging import get_logger
+from meet2obsidian.utils.logging import get_logger, setup_component_logging
 from meet2obsidian.processing import ProcessingQueue, ProcessingState, ProcessingStatus, FileProcessor
+from meet2obsidian.processing.pipeline import ProcessingPipeline
 
 
 class ApplicationManager:
@@ -227,17 +228,27 @@ class ApplicationManager:
             # Check components status
             status["components_initialized"] = self._components_initialized
             status["components"] = {}
-            
+
+            # Check for integrated pipeline
+            if hasattr(self, 'processing_pipeline') and self.processing_pipeline:
+                status["components"]["processing_pipeline"] = "active"
+                # Include pipeline status information
+                pipeline_status = self.processing_pipeline.get_status()
+                status["pipeline"] = pipeline_status
+            else:
+                status["components"]["processing_pipeline"] = "inactive"
+
+            # Individual components status (for backward compatibility)
             if hasattr(self, 'file_monitor') and self.file_monitor:
                 status["components"]["file_monitor"] = "active"
             else:
                 status["components"]["file_monitor"] = "inactive"
-            
+
             if hasattr(self, 'config_manager') and self.config_manager:
                 status["components"]["config_manager"] = "active"
             else:
                 status["components"]["config_manager"] = "inactive"
-                
+
             if hasattr(self, 'processing_queue') and self.processing_queue:
                 status["components"]["processing_queue"] = "active"
             else:
@@ -372,55 +383,114 @@ class ApplicationManager:
                     self.logger.info(f"Video directory monitoring configured: {video_dir}")
 
                     try:
-                        from meet2obsidian.monitor import FileMonitor
-
-                        # Get file patterns and configuration from config if available
+                        # Setup integrated processing pipeline (EPIC 27)
+                        # Get configuration values
                         patterns = self.config_manager.get_value("processing.file_patterns",
                                                                default=["*.mp4", "*.mov", "*.webm", "*.mkv"])
-                        poll_interval = self.config_manager.get_value("processing.poll_interval", default=60)
                         min_file_age = self.config_manager.get_value("processing.min_file_age_seconds", default=5)
+                        max_concurrent = self.config_manager.get_value("processing.max_concurrent_files", default=2)
 
-                        # Get processed files path for persistence
-                        app_support_dir = os.path.dirname(self._pid_file)
-                        processed_files_path = os.path.join(app_support_dir, "processed_files.txt")
+                        # Get audio quality configuration
+                        audio_format = self.config_manager.get_value("audio.format", default="m4a")
+                        audio_quality = self.config_manager.get_value("audio.quality", default="medium")
 
-                        # Create file monitor
-                        self.file_monitor = FileMonitor(
-                            directory=os.path.expanduser(video_dir),
+                        # Get directory for logs
+                        log_dir = os.path.expanduser("~/Library/Logs/meet2obsidian")
+                        os.makedirs(log_dir, exist_ok=True)
+
+                        # Get audio output directory
+                        audio_dir = self.config_manager.get_value("paths.audio_directory",
+                                                                default=os.path.join(os.path.dirname(self._pid_file), "audio"))
+
+                        # Setup cache directory
+                        cache_dir = os.path.join(os.path.dirname(self._pid_file), "cache")
+
+                        # Create processing pipeline
+                        self.processing_pipeline = ProcessingPipeline(
+                            watch_directory=os.path.expanduser(video_dir),
+                            output_directory=audio_dir,
+                            cache_directory=cache_dir,
                             file_patterns=patterns,
-                            poll_interval=poll_interval,
+                            audio_format=audio_format,
+                            audio_quality=audio_quality,
+                            max_concurrent=max_concurrent,
                             min_file_age_seconds=min_file_age,
-                            logger=self.logger
+                            log_dir=log_dir,
+                            log_level="info"
                         )
 
-                        # Load previously processed files if available
-                        self.file_monitor.load_processed_files(processed_files_path)
+                        # Store references to the individual components for compatibility
+                        self.file_monitor = self.processing_pipeline.file_monitor
+                        self.processing_queue = self.processing_pipeline.processing_queue
 
-                        # If audio processor is available, use it for quick video validation
-                        if hasattr(self, 'audio_processor') and self.audio_processor:
-                            # Set quick validation function
-                            self.file_monitor.set_validation_function(self.audio_processor.quick_validate)
-                            self.logger.info("Using AudioExtractor for quick video validation")
-
-                        # Register callback function for new files
-                        self.file_monitor.register_file_callback(self._handle_new_file)
-
-                        # Start monitoring
-                        if not self.file_monitor.start():
-                            self.logger.error("Error starting file monitoring")
+                        # Start the processing pipeline
+                        if not self.processing_pipeline.start():
+                            self.logger.error("Error starting processing pipeline")
                             return False
 
-                        self.logger.info(f"File monitoring started for {video_dir} using event-based detection")
+                        self.logger.info(f"Processing pipeline started for {video_dir}")
                     except ImportError as e:
-                        self.logger.warning(f"Could not import FileMonitor: {str(e)}")
+                        self.logger.warning(f"Could not import ProcessingPipeline: {str(e)}")
+
+                        # Fall back to the old implementation
+                        try:
+                            from meet2obsidian.monitor import FileMonitor
+
+                            # Get file patterns and configuration from config if available
+                            patterns = self.config_manager.get_value("processing.file_patterns",
+                                                                  default=["*.mp4", "*.mov", "*.webm", "*.mkv"])
+                            poll_interval = self.config_manager.get_value("processing.poll_interval", default=60)
+                            min_file_age = self.config_manager.get_value("processing.min_file_age_seconds", default=5)
+
+                            # Get processed files path for persistence
+                            app_support_dir = os.path.dirname(self._pid_file)
+                            processed_files_path = os.path.join(app_support_dir, "processed_files.txt")
+
+                            # Create file monitor
+                            self.file_monitor = FileMonitor(
+                                directory=os.path.expanduser(video_dir),
+                                file_patterns=patterns,
+                                poll_interval=poll_interval,
+                                min_file_age_seconds=min_file_age,
+                                logger=self.logger
+                            )
+
+                            # Load previously processed files if available
+                            self.file_monitor.load_processed_files(processed_files_path)
+
+                            # If audio processor is available, use it for quick video validation
+                            if hasattr(self, 'audio_processor') and self.audio_processor:
+                                # Set quick validation function
+                                self.file_monitor.set_validation_function(self.audio_processor.quick_validate)
+                                self.logger.info("Using AudioExtractor for quick video validation")
+
+                            # Register callback function for new files
+                            self.file_monitor.register_file_callback(self._handle_new_file)
+
+                            # Start monitoring
+                            if not self.file_monitor.start():
+                                self.logger.error("Error starting file monitoring")
+                                return False
+
+                            self.logger.info(f"File monitoring started for {video_dir} using event-based detection")
+
+                            # Start processing queue after all components are initialized
+                            if self.processing_queue:
+                                self.processing_queue.start()
+                                self.logger.info("Processing queue started")
+                        except ImportError as e:
+                            self.logger.warning(f"Could not import FileMonitor: {str(e)}")
+                        except Exception as e:
+                            self.logger.error(f"Error initializing FileMonitor: {str(e)}")
+                            return False
                     except Exception as e:
-                        self.logger.error(f"Error initializing FileMonitor: {str(e)}")
+                        self.logger.error(f"Error initializing ProcessingPipeline: {str(e)}")
                         return False
-                
-                # Start processing queue after all components are initialized
-                if self.processing_queue:
-                    self.processing_queue.start()
-                    self.logger.info("Processing queue started")
+                else:
+                    # Start processing queue after all components are initialized if no video dir configured
+                    if self.processing_queue:
+                        self.processing_queue.start()
+                        self.logger.info("Processing queue started")
                 
             except ImportError as e:
                 self.logger.warning(f"Could not load configuration module: {str(e)}")
@@ -451,34 +521,45 @@ class ApplicationManager:
                 self.logger.warning("Components were not initialized")
                 return True
             
-            # Stop the ProcessingQueue if it's running
-            if hasattr(self, 'processing_queue') and self.processing_queue:
+            # Stop the ProcessingPipeline if it's running
+            if hasattr(self, 'processing_pipeline') and self.processing_pipeline:
                 try:
-                    self.processing_queue.stop(wait=True)
-                    self.logger.info("Processing queue stopped")
-                except Exception as e:
-                    self.logger.error(f"Error stopping processing queue: {str(e)}")
-            
-            # Stop the FileMonitor if it's running
-            if hasattr(self, 'file_monitor') and self.file_monitor:
-                try:
-                    # Save processed files list before stopping
-                    try:
-                        app_support_dir = os.path.dirname(self._pid_file)
-                        processed_files_path = os.path.join(app_support_dir, "processed_files.txt")
-                        if hasattr(self.file_monitor, 'save_processed_files'):
-                            self.file_monitor.save_processed_files(processed_files_path)
-                            self.logger.info("Saved processed files list")
-                    except Exception as e:
-                        self.logger.warning(f"Error saving processed files list: {str(e)}")
-
-                    # Stop monitoring
-                    if not self.file_monitor.stop():
-                        self.logger.warning("Failed to stop file monitoring")
+                    if not self.processing_pipeline.stop():
+                        self.logger.warning("Failed to stop processing pipeline cleanly")
                     else:
-                        self.logger.info("File monitoring stopped")
+                        self.logger.info("Processing pipeline stopped")
                 except Exception as e:
-                    self.logger.error(f"Error stopping file monitoring: {str(e)}")
+                    self.logger.error(f"Error stopping processing pipeline: {str(e)}")
+            else:
+                # Fall back to stopping individual components
+                # Stop the ProcessingQueue if it's running
+                if hasattr(self, 'processing_queue') and self.processing_queue:
+                    try:
+                        self.processing_queue.stop(wait=True)
+                        self.logger.info("Processing queue stopped")
+                    except Exception as e:
+                        self.logger.error(f"Error stopping processing queue: {str(e)}")
+
+                # Stop the FileMonitor if it's running
+                if hasattr(self, 'file_monitor') and self.file_monitor:
+                    try:
+                        # Save processed files list before stopping
+                        try:
+                            app_support_dir = os.path.dirname(self._pid_file)
+                            processed_files_path = os.path.join(app_support_dir, "processed_files.txt")
+                            if hasattr(self.file_monitor, 'save_processed_files'):
+                                self.file_monitor.save_processed_files(processed_files_path)
+                                self.logger.info("Saved processed files list")
+                        except Exception as e:
+                            self.logger.warning(f"Error saving processed files list: {str(e)}")
+
+                        # Stop monitoring
+                        if not self.file_monitor.stop():
+                            self.logger.warning("Failed to stop file monitoring")
+                        else:
+                            self.logger.info("File monitoring stopped")
+                    except Exception as e:
+                        self.logger.error(f"Error stopping file monitoring: {str(e)}")
             
             # Reset component state
             self._components_initialized = False
