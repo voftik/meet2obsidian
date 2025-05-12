@@ -10,7 +10,7 @@ import sys
 import click
 
 from meet2obsidian.utils.logging import setup_logging, get_logger
-from meet2obsidian.cli_commands import logs_command
+from meet2obsidian.cli_commands import logs_command, apikeys_command
 
 
 @click.group()
@@ -84,6 +84,7 @@ def test(ctx, api):
 
 #  538AB@0F8O 4>?>;=8B5;L=KE :><0=4 87 4@C38E <>4C;59
 logs_command.register_commands(cli)
+apikeys_command.register_commands(cli)
 
 
 def main():

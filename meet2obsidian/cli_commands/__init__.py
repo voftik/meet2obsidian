@@ -7,3 +7,4 @@
 
 # Импорт всех модулей команд для регистрации
 from . import logs_command
+from . import apikeys_command

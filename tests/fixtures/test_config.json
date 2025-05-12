@@ -1,0 +1,26 @@
+{
+  "paths": {
+    "video_directory": "/Users/test/Videos",
+    "obsidian_vault": "/Users/test/Obsidian/MainVault",
+    "obsidian_template": "/Users/test/Obsidian/MainVault/Templates/meeting.md"
+  },
+  "api": {
+    "rev_ai": {
+      "job_timeout": 3600
+    },
+    "claude": {
+      "model": "claude-3-opus-20240229"
+    }
+  },
+  "monitoring": {
+    "check_interval": 60,
+    "file_extensions": [".mp4", ".m4a", ".mp3"],
+    "exclude_patterns": ["._*", ".DS_Store"]
+  },
+  "note_generation": {
+    "include_transcription": true,
+    "include_summary": true,
+    "include_tasks": true,
+    "include_decisions": true
+  }
+}

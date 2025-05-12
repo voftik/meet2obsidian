@@ -277,7 +277,7 @@ The project is in active development. Current status:
   - Logging module fully implemented with structured logging and rotation ✅
   - Security module for API key management fully implemented ✅
   - Basic structure is set up for other modules
-  - CLI commands system established
+  - CLI commands system established for logs and API key management ✅
 
 - **Documentation**:
   - Comprehensive documentation for completed components
@@ -292,6 +292,7 @@ The project is in active development. Current status:
   - Unit and integration tests for all implemented components ✅
   - Support for test markers and selective test execution ✅
   - Test-driven development approach being followed
+  - Comprehensive CLI interface tests added ✅
 
 - **Examples**:
   - Example of logging functionality
@@ -304,6 +305,7 @@ Key functional components:
 - `config.py`: Configuration management system with JSON support and validation ✅
 - `utils/logging.py`: Structured logging system with JSON format and rotation ✅
 - `cli_commands/logs_command.py`: CLI commands for log management ✅
+- `cli_commands/apikeys_command.py`: CLI commands for API key management ✅
 - `scripts/setup_api_keys.py`: Script for setting up and testing API keys ✅
 
 ### Completed Epics:
@@ -324,5 +326,17 @@ Key functional components:
   - ✅ Task 3: Tests for deleting keys
   - ✅ Task 4: Tests for error handling
   - ✅ Task 5: Integration tests with real system keychain
+- **Epic 10**: Implementation of API key storage module ✅ (2025-05-12)
+  - ✅ Task 1: Create class for working with Keychain through keyring library
+  - ✅ Task 2: Implement API key saving
+  - ✅ Task 3: Implement API key retrieval
+  - ✅ Task 4: Implement API key deletion
+  - ✅ Task 5: Create CLI commands for API key management
+  - ✅ Task 6: Update API key setup tools
+- **Epic 11**: Tests for CLI interface ✅ (2025-05-12)
+  - ✅ Task 1: Tests for start/stop commands
+  - ✅ Task 2: Tests for status command
+  - ✅ Task 3: Tests for config command (prepared for future implementation)
+  - ✅ Task 4: Tests for argument processing
 
-Last Updated: 2025-05-12
+Last Updated: 2025-05-13
