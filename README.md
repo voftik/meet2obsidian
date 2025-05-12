@@ -58,6 +58,13 @@ Meet2Obsidian automatically processes meeting recordings, converts them to text,
 - Rev.ai account for transcription services
 - Anthropic Claude API key for content analysis
 
+### Utility Scripts
+
+Meet2Obsidian includes helpful utility scripts to make your workflow smoother:
+
+- **API Key Setup**: The `scripts/setup_api_keys.py` script helps you securely manage your API keys with testing capabilities
+- **Video Validation**: The `scripts/check_videos.py` script checks video files for issues before processing
+
 ### Installation
 
 #### Development Installation

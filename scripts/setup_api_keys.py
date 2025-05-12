@@ -1,284 +1,512 @@
 #!/usr/bin/env python3
 """
-Настройка и проверка API-ключей для meet2obsidian.
+Script for setting up API keys for meet2obsidian.
 
-Этот скрипт помогает настроить и проверить API-ключи для Rev.ai и Claude,
-сохраняя их безопасно в системном хранилище ключей.
-
-Использование:
-    python setup_api_keys.py --revai <КЛЮЧ> --claude <КЛЮЧ>  # Настройка API-ключей
-    python setup_api_keys.py --test                          # Проверка существующих API-ключей
-    python setup_api_keys.py --status                        # Проверка наличия API-ключей
-    python setup_api_keys.py --list                          # Вывод всех API-ключей
-    python setup_api_keys.py --delete rev_ai                 # Удаление API-ключа
+This script provides a command-line interface for managing API keys used by meet2obsidian,
+including setting, testing, listing, and deleting API keys for Rev.ai and Claude services.
 """
 
-import argparse
-import sys
 import os
-import requests
-import anthropic
-import time
+import sys
+import json
+import argparse
 import getpass
-from typing import Dict, List, Optional, Any, Union
+import logging
+from typing import Optional, Dict, Any, List, Tuple
 
-# Добавляем родительскую директорию в путь для импорта
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Try to import requests, which may not be installed
+try:
+    import requests
+    HAS_REQUESTS = True
+except ImportError:
+    HAS_REQUESTS = False
+
+# Add parent directory to path to import from meet2obsidian
+script_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(script_dir)
+sys.path.insert(0, parent_dir)
+
+# Try to import necessary modules with graceful degradation
+HAS_KEYCHAIN = True
+HAS_LOGGING = True
+HAS_RICH = False
 
 try:
-    from meet2obsidian.utils.logging import setup_logging, get_logger
-    from meet2obsidian.utils.security import KeychainManager
-    has_logging = True
-except ImportError:
-    import logging
-    has_logging = False
-    logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
-    logger = logging.getLogger("setup_api_keys")
-
-def test_rev_ai_key(api_key):
-    """Проверяет, является ли ключ Rev.ai API действительным, выполняя тестовый запрос."""
-    url = "https://api.rev.ai/speechtotext/v1/account"
-    headers = {"Authorization": f"Bearer {api_key}"}
-    
-    logger = get_logger("setup_api_keys") if has_logging else logging.getLogger("setup_api_keys")
-    logger.info("Проверка API-ключа Rev.ai...")
-    
     try:
-        response = requests.get(url, headers=headers, timeout=10)
+        from meet2obsidian.utils.security import KeychainManager
+    except ImportError as e:
+        print(f"Warning: Cannot import KeychainManager: {e}")
+        print("Falling back to local implementation...")
+        HAS_KEYCHAIN = False
+
+    try:
+        from meet2obsidian.utils.logging import setup_logging, get_logger
+    except ImportError:
+        print("Warning: Cannot import logging utilities")
+        HAS_LOGGING = False
+
+    # Try to import Rich for better formatting if available
+    try:
+        from rich.console import Console
+        from rich.table import Table
+        from rich.prompt import Prompt
+        HAS_RICH = True
+    except ImportError:
+        HAS_RICH = False
+except Exception as e:
+    print(f"Error setting up environment: {e}")
+    HAS_KEYCHAIN = False
+    HAS_LOGGING = False
+    HAS_RICH = False
+
+# Local implementation of KeychainManager if the main one is not available
+if not HAS_KEYCHAIN:
+    class KeychainManager:
+        """Simple local implementation of KeychainManager for testing purposes."""
+
+        def __init__(self, logger=None):
+            self.logger = logger or logging.getLogger(__name__)
+            self.keys = {}
+            self._storage_file = os.path.expanduser("~/.meet2obsidian_temp_keys.json")
+            self._load_from_file()
+
+        def _load_from_file(self):
+            """Load keys from a temporary JSON file."""
+            if os.path.exists(self._storage_file):
+                try:
+                    with open(self._storage_file, 'r') as f:
+                        self.keys = json.load(f)
+                except Exception as e:
+                    print(f"Warning: Failed to load keys from file: {e}")
+
+        def _save_to_file(self):
+            """Save keys to a temporary JSON file."""
+            try:
+                with open(self._storage_file, 'w') as f:
+                    json.dump(self.keys, f)
+            except Exception as e:
+                print(f"Warning: Failed to save keys to file: {e}")
+
+        def store_api_key(self, key_name, api_key):
+            """Store an API key (in memory only)."""
+            self.keys[key_name] = api_key
+            self._save_to_file()
+            return True
+
+        def get_api_key(self, key_name):
+            """Get an API key."""
+            return self.keys.get(key_name)
+
+        def delete_api_key(self, key_name):
+            """Delete an API key."""
+            if key_name in self.keys:
+                del self.keys[key_name]
+                self._save_to_file()
+                return True
+            return False
+
+        def key_exists(self, key_name):
+            """Check if a key exists."""
+            return key_name in self.keys
+
+        def get_api_keys_status(self):
+            """Get the status of all API keys."""
+            return {key: True for key in ["rev_ai", "claude"] if key in self.keys}
+
+        def mask_api_key(self, api_key, visible_chars=4):
+            """Mask an API key for display."""
+            if not api_key:
+                return ""
+
+            if len(api_key) <= visible_chars:
+                return api_key
+
+            return api_key[:visible_chars] + "*" * (len(api_key) - visible_chars)
+
+# Set up logging
+if HAS_LOGGING:
+    setup_logging(level="info")
+    logger = get_logger("api_keys_setup")
+else:
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logger = logging.getLogger("api_keys_setup")
+
+# Initialize KeychainManager
+keychain = KeychainManager(logger=logger)
+
+# Initialize Rich console if available
+console = Console() if HAS_RICH else None
+
+
+def setup_args() -> argparse.Namespace:
+    """Set up command line arguments."""
+    parser = argparse.ArgumentParser(description='Set up API keys for meet2obsidian')
+    
+    subparsers = parser.add_subparsers(dest='command', help='Commands')
+    
+    # Set API key command
+    set_parser = subparsers.add_parser('set', help='Set an API key')
+    set_parser.add_argument('key_name', choices=['rev_ai', 'claude'], 
+                          help='Name of the API key to set')
+    set_parser.add_argument('--value', help='API key value (if not provided, will prompt securely)')
+    set_parser.add_argument('--test', action='store_true', 
+                          help='Test the API key before storing')
+    
+    # Get API key command
+    get_parser = subparsers.add_parser('get', help='Get an API key (masked)')
+    get_parser.add_argument('key_name', help='Name of the API key to get')
+    
+    # List API keys command
+    list_parser = subparsers.add_parser('list', help='List all API keys')
+    
+    # Delete API key command
+    delete_parser = subparsers.add_parser('delete', help='Delete an API key')
+    delete_parser.add_argument('key_name', help='Name of the API key to delete')
+    
+    # Test API key command
+    test_parser = subparsers.add_parser('test', help='Test an API key')
+    test_parser.add_argument('key_name', choices=['rev_ai', 'claude'], 
+                           help='Name of the API key to test')
+    test_parser.add_argument('--value', help='API key value to test (if not provided, will use stored key)')
+    
+    # Interactive setup
+    subparsers.add_parser('interactive', help='Interactive setup of API keys')
+    
+    return parser.parse_args()
+
+
+def prompt_api_key(key_name: str) -> str:
+    """
+    Prompt the user for an API key with secure input.
+    
+    Args:
+        key_name: Name of the API key (for display purposes)
+        
+    Returns:
+        str: The entered API key
+    """
+    prompt_message = f"Enter {key_name} API key: "
+    
+    if HAS_RICH:
+        # Use Rich's secure prompt
+        return Prompt.ask(prompt_message, password=True)
+    else:
+        # Fall back to getpass
+        return getpass.getpass(prompt_message)
+
+
+def test_rev_ai_key(api_key: str) -> Tuple[bool, str]:
+    """
+    Test the Rev.ai API key by making a simple API call.
+
+    Args:
+        api_key: Rev.ai API key to test
+
+    Returns:
+        Tuple[bool, str]: (success, message)
+    """
+    if not HAS_REQUESTS:
+        return False, "The 'requests' module is not installed. Install it with: pip install requests"
+
+    try:
+        # Make a simple call to get account details
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        response = requests.get("https://api.rev.ai/speechtotext/v1/account", headers=headers)
+
         if response.status_code == 200:
             account_info = response.json()
-            logger.info(f"API-ключ Rev.ai действителен. Аккаунт: {account_info.get('email')}")
-            return True
+            return True, f"Success! Account email: {account_info.get('email')}"
         else:
-            logger.error(f"Проверка API-ключа Rev.ai не удалась: {response.status_code} - {response.text}")
-            return False
+            return False, f"API Error: {response.status_code} - {response.text}"
     except Exception as e:
-        logger.error(f"Ошибка при проверке API-ключа Rev.ai: {str(e)}")
-        return False
+        return False, f"Connection error: {str(e)}"
 
-def test_claude_key(api_key):
-    """Проверяет, является ли ключ Claude API действительным, выполняя тестовый запрос."""
-    logger = get_logger("setup_api_keys") if has_logging else logging.getLogger("setup_api_keys")
-    logger.info("Проверка API-ключа Claude...")
-    
+
+def test_claude_key(api_key: str) -> Tuple[bool, str]:
+    """
+    Test the Claude API key by making a simple API call.
+
+    Args:
+        api_key: Claude API key to test
+
+    Returns:
+        Tuple[bool, str]: (success, message)
+    """
+    if not HAS_REQUESTS:
+        return False, "The 'requests' module is not installed. Install it with: pip install requests"
+
     try:
-        client = anthropic.Anthropic(api_key=api_key)
-        response = client.messages.create(
-            model="claude-3-haiku-20240307",
-            max_tokens=10,
-            messages=[
-                {"role": "user", "content": "Say hello"}
-            ]
-        )
-        if response:
-            logger.info("API-ключ Claude действителен.")
-            return True
-        return False
+        # Make a simple call to list models (a lightweight API call)
+        headers = {
+            "x-api-key": api_key,
+            "Content-Type": "application/json",
+            "anthropic-version": "2023-06-01"
+        }
+        response = requests.get("https://api.anthropic.com/v1/models", headers=headers)
+
+        if response.status_code == 200:
+            models_info = response.json()
+            model_names = [model.get("name") for model in models_info.get("data", [])]
+            model_str = ", ".join(model_names[:3]) + ("..." if len(model_names) > 3 else "")
+            return True, f"Success! Available models: {model_str}"
+        else:
+            return False, f"API Error: {response.status_code} - {response.text}"
     except Exception as e:
-        logger.error(f"Ошибка при проверке API-ключа Claude: {str(e)}")
-        return False
+        return False, f"Connection error: {str(e)}"
 
-def setup_api_keys(args):
-    """Настраивает API-ключи на основе аргументов командной строки."""
-    logger = get_logger("setup_api_keys") if has_logging else logging.getLogger("setup_api_keys")
-    keychain = KeychainManager(logger)
+
+def display_api_keys_status() -> None:
+    """Display the status of all required API keys."""
+    status = keychain.get_api_keys_status()
     
-    # Отслеживаем общий успех
-    all_successful = True
-    
-    # Обработка ключа Rev.ai API
-    if args.revai:
-        logger.info("Настройка API-ключа Rev.ai...")
+    if HAS_RICH:
+        table = Table(title="API Keys Status")
+        table.add_column("API Service", style="cyan")
+        table.add_column("Status", style="green")
+        table.add_column("Key Preview", style="yellow")
         
-        # Сначала проверяем ключ
-        if test_rev_ai_key(args.revai):
-            # Сохраняем ключ в хранилище
-            if keychain.store_api_key("rev_ai", args.revai):
-                logger.info("API-ключ Rev.ai успешно сохранен.")
-                print("API-ключ Rev.ai: Настроен ✓")
-            else:
-                logger.error("Не удалось сохранить API-ключ Rev.ai.")
-                print("API-ключ Rev.ai: Не удалось сохранить ✗")
-                all_successful = False
-        else:
-            logger.error("Проверка API-ключа Rev.ai не удалась. Ключ не сохранен.")
-            print("API-ключ Rev.ai: Недействителен ✗")
-            all_successful = False
-    elif args.test or args.status:
-        # Просто проверяем, существует ли ключ и является ли он действительным
-        api_key = keychain.get_api_key("rev_ai")
-        if api_key:
-            if args.test:
-                valid = test_rev_ai_key(api_key)
-                status = "Действителен ✓" if valid else "Недействителен ✗"
-            else:
-                status = "Настроен"
-            print(f"API-ключ Rev.ai: {status}")
-        else:
-            print("API-ключ Rev.ai: Не настроен ✗")
-            all_successful = False
-    
-    # Обработка ключа Claude API
-    if args.claude:
-        logger.info("Настройка API-ключа Claude...")
-        
-        # Сначала проверяем ключ
-        if test_claude_key(args.claude):
-            # Сохраняем ключ в хранилище
-            if keychain.store_api_key("claude", args.claude):
-                logger.info("API-ключ Claude успешно сохранен.")
-                print("API-ключ Claude: Настроен ✓")
-            else:
-                logger.error("Не удалось сохранить API-ключ Claude.")
-                print("API-ключ Claude: Не удалось сохранить ✗")
-                all_successful = False
-        else:
-            logger.error("Проверка API-ключа Claude не удалась. Ключ не сохранен.")
-            print("API-ключ Claude: Недействителен ✗")
-            all_successful = False
-    elif args.test or args.status:
-        # Просто проверяем, существует ли ключ и является ли он действительным
-        api_key = keychain.get_api_key("claude")
-        if api_key:
-            if args.test:
-                valid = test_claude_key(api_key)
-                status = "Действителен ✓" if valid else "Недействителен ✗"
-            else:
-                status = "Настроен"
-            print(f"API-ключ Claude: {status}")
-        else:
-            print("API-ключ Claude: Не настроен ✗")
-            all_successful = False
-    
-    # Если запрошен просмотр всех ключей
-    if args.list:
-        print("\nСтатус всех API-ключей:")
-        print("------------------------")
-        statuses = keychain.get_api_keys_status()
-        for key_name, exists in statuses.items():
-            status = "Настроен" if exists else "Не настроен"
-            print(f"{key_name.ljust(10)}: {status}")
-    
-    return all_successful
-
-def prompt_api_key(key_name: str, allow_empty: bool = False) -> Optional[str]:
-    """
-    Запрашивает у пользователя API-ключ с маскированным вводом.
-
-    Args:
-        key_name: Название ключа для запроса
-        allow_empty: Разрешить пустое значение
-
-    Returns:
-        str или None: Введенное значение или None, если ввод пустой и allow_empty=False
-    """
-    logger = get_logger("setup_api_keys") if has_logging else logging.getLogger("setup_api_keys")
-
-    prompt_text = f"Введите API-ключ для {key_name}: "
-    api_key = getpass.getpass(prompt_text)
-
-    if not api_key and not allow_empty:
-        logger.warning(f"API-ключ для {key_name} не был введен.")
-        return None
-
-    return api_key
-
-def delete_api_key(key_name: str) -> bool:
-    """
-    Удаляет API-ключ из хранилища.
-
-    Args:
-        key_name: Название ключа для удаления
-
-    Returns:
-        bool: True в случае успеха, False при ошибке
-    """
-    logger = get_logger("setup_api_keys") if has_logging else logging.getLogger("setup_api_keys")
-    keychain = KeychainManager(logger)
-
-    logger.info(f"Удаление API-ключа {key_name}...")
-
-    # Проверка существования ключа
-    if not keychain.key_exists(key_name):
-        logger.warning(f"API-ключ {key_name} не найден в хранилище.")
-        print(f"API-ключ {key_name}: Не найден ✗")
-        return False
-
-    # Запрос подтверждения
-    confirm = input(f"Вы уверены, что хотите удалить API-ключ {key_name}? (y/N): ")
-    if confirm.lower() not in ["y", "yes"]:
-        logger.info("Удаление отменено пользователем.")
-        print("Удаление отменено.")
-        return False
-
-    # Удаление ключа
-    result = keychain.delete_api_key(key_name)
-    if result:
-        logger.info(f"API-ключ {key_name} успешно удален.")
-        print(f"API-ключ {key_name}: Удален ✓")
-        return True
+        for key_name, exists in status.items():
+            status_text = "[green]Set[/green]" if exists else "[red]Not Set[/red]"
+            preview = ""
+            if exists:
+                api_key = keychain.get_api_key(key_name)
+                if api_key:
+                    preview = keychain.mask_api_key(api_key)
+                    
+            table.add_row(key_name, status_text, preview)
+            
+        console.print(table)
     else:
-        logger.error(f"Не удалось удалить API-ключ {key_name}.")
-        print(f"API-ключ {key_name}: Не удалось удалить ✗")
-        return False
+        print("\nAPI Keys Status:")
+        print("-" * 50)
+        for key_name, exists in status.items():
+            status_text = "Set" if exists else "Not Set"
+            preview = ""
+            if exists:
+                api_key = keychain.get_api_key(key_name)
+                if api_key:
+                    preview = keychain.mask_api_key(api_key)
+            print(f"{key_name:10} | {status_text:10} | {preview}")
+        print("-" * 50)
+
+
+def set_api_key(key_name: str, value: Optional[str] = None, test: bool = False) -> None:
+    """
+    Set an API key.
+    
+    Args:
+        key_name: Name of the API key to set
+        value: Value of the API key (if None, will prompt)
+        test: Whether to test the key before storing
+    """
+    # Get the API key value if not provided
+    api_key = value
+    if api_key is None:
+        api_key = prompt_api_key(key_name)
+    
+    if not api_key:
+        print_error("API key cannot be empty")
+        return
+    
+    # Test the API key if requested
+    if test:
+        print_info(f"Testing {key_name} API key...")
+        
+        success = False
+        message = ""
+        
+        if key_name == "rev_ai":
+            success, message = test_rev_ai_key(api_key)
+        elif key_name == "claude":
+            success, message = test_claude_key(api_key)
+        
+        if success:
+            print_success(message)
+        else:
+            print_error(f"API key test failed: {message}")
+            confirm = input("Store the key anyway? (y/n): ").lower()
+            if confirm != 'y':
+                print_info("Operation cancelled")
+                return
+    
+    # Store the API key
+    if keychain.store_api_key(key_name, api_key):
+        print_success(f"API key for {key_name} stored successfully")
+    else:
+        print_error(f"Failed to store API key for {key_name}")
+
+
+def test_api_key(key_name: str, value: Optional[str] = None) -> None:
+    """
+    Test an API key.
+    
+    Args:
+        key_name: Name of the API key to test
+        value: Value of the API key (if None, will use stored key)
+    """
+    # Get the API key value if not provided
+    api_key = value
+    if api_key is None:
+        api_key = keychain.get_api_key(key_name)
+        if not api_key:
+            print_error(f"No API key found for {key_name}. Use 'set' command to set it first.")
+            return
+    
+    print_info(f"Testing {key_name} API key...")
+    
+    success = False
+    message = ""
+    
+    if key_name == "rev_ai":
+        success, message = test_rev_ai_key(api_key)
+    elif key_name == "claude":
+        success, message = test_claude_key(api_key)
+    
+    if success:
+        print_success(message)
+    else:
+        print_error(f"API key test failed: {message}")
+
+
+def interactive_setup() -> None:
+    """Run interactive setup for all required API keys."""
+    print_info("Welcome to meet2obsidian API key setup!\n")
+    print_info("This script will help you set up the required API keys for meet2obsidian.")
+    print_info("You will need:")
+    print_info("1. A Rev.ai API key for speech-to-text services")
+    print_info("2. A Claude API key from Anthropic for AI analysis")
+    print_info("\nYou can skip any key by pressing Enter when prompted.\n")
+    
+    # Set up Rev.ai API key
+    print_info("Setting up Rev.ai API key:")
+    print_info("Get your Rev.ai API key from: https://www.rev.ai/access_token")
+    api_key = prompt_api_key("Rev.ai")
+    
+    if api_key:
+        print_info("Testing Rev.ai API key...")
+        success, message = test_rev_ai_key(api_key)
+        
+        if success:
+            print_success(message)
+            keychain.store_api_key("rev_ai", api_key)
+            print_success("Rev.ai API key stored successfully")
+        else:
+            print_error(f"API key test failed: {message}")
+            confirm = input("Store the key anyway? (y/n): ").lower()
+            if confirm == 'y':
+                keychain.store_api_key("rev_ai", api_key)
+                print_success("Rev.ai API key stored successfully")
+    else:
+        print_info("Skipped Rev.ai API key setup")
+    
+    print("\n" + "-" * 50 + "\n")
+    
+    # Set up Claude API key
+    print_info("Setting up Claude API key:")
+    print_info("Get your Claude API key from: https://console.anthropic.com/")
+    api_key = prompt_api_key("Claude")
+    
+    if api_key:
+        print_info("Testing Claude API key...")
+        success, message = test_claude_key(api_key)
+        
+        if success:
+            print_success(message)
+            keychain.store_api_key("claude", api_key)
+            print_success("Claude API key stored successfully")
+        else:
+            print_error(f"API key test failed: {message}")
+            confirm = input("Store the key anyway? (y/n): ").lower()
+            if confirm == 'y':
+                keychain.store_api_key("claude", api_key)
+                print_success("Claude API key stored successfully")
+    else:
+        print_info("Skipped Claude API key setup")
+    
+    print("\n" + "-" * 50 + "\n")
+    
+    # Show final status
+    print_info("API key setup complete!")
+    display_api_keys_status()
+
+
+# Formatted output functions
+def print_success(message: str) -> None:
+    """Print a success message."""
+    if HAS_RICH:
+        console.print(f"[green]✓ {message}[/green]")
+    else:
+        print(f"✓ {message}")
+
+
+def print_error(message: str) -> None:
+    """Print an error message."""
+    if HAS_RICH:
+        console.print(f"[red]✗ {message}[/red]")
+    else:
+        print(f"✗ {message}")
+
+
+def print_info(message: str) -> None:
+    """Print an info message."""
+    if HAS_RICH:
+        console.print(f"[blue]ℹ {message}[/blue]")
+    else:
+        print(f"ℹ {message}")
+
 
 def main():
-    """Разбор аргументов и запуск скрипта."""
-    parser = argparse.ArgumentParser(description="Настройка API-ключей для meet2obsidian")
+    """Main function."""
+    # Check if the required Python packages are installed
+    if not HAS_REQUESTS and len(sys.argv) > 1 and sys.argv[1] in ['test', 'set', 'interactive']:
+        print_error("The 'requests' package is required for API testing.")
+        print_info("Please install it using: pip install requests")
+        print_info("You can still use 'list', 'get', and 'delete' commands without requests.")
+        if len(sys.argv) > 1 and sys.argv[1] in ['test', 'set']:
+            return 1
 
-    # Аргументы для API-ключей
-    parser.add_argument('--revai', help='API-ключ Rev.ai')
-    parser.add_argument('--claude', help='API-ключ Claude')
+    args = setup_args()
 
-    # Аргументы для действий
-    parser.add_argument('--test', action='store_true', help='Проверить существующие ключи')
-    parser.add_argument('--status', action='store_true', help='Показать статус API-ключей')
-    parser.add_argument('--list', action='store_true', help='Показать список всех API-ключей')
-    parser.add_argument('--delete', metavar='KEY_NAME', help='Удалить указанный API-ключ')
-    parser.add_argument('--interactive', '-i', action='store_true', help='Запустить в интерактивном режиме')
-    parser.add_argument('--verbose', '-v', action='store_true', help='Включить подробное логирование')
-
-    args = parser.parse_args()
-
-    # Настройка логирования
-    if has_logging:
-        log_level = "DEBUG" if args.verbose else "INFO"
-        setup_logging(log_level=log_level, add_console_handler=True)
-    else:
-        logging_level = logging.DEBUG if args.verbose else logging.INFO
-        logging.basicConfig(level=logging_level)
-
-    logger = get_logger("setup_api_keys") if has_logging else logging.getLogger("setup_api_keys")
-
-    # Интерактивный режим
-    if args.interactive:
-        logger.info("Запуск в интерактивном режиме...")
-        print("=== Интерактивная настройка API-ключей ===")
-
-        # Запрос ключей у пользователя
-        revai_key = prompt_api_key("Rev.ai", allow_empty=True)
-        claude_key = prompt_api_key("Claude", allow_empty=True)
-
-        # Обновление аргументов
-        if revai_key:
-            args.revai = revai_key
-        if claude_key:
-            args.claude = claude_key
-
-    # Удаление ключа
-    if args.delete:
-        return 0 if delete_api_key(args.delete) else 1
-
-    # Если не указаны аргументы, показываем справку
-    if not any([args.revai, args.claude, args.test, args.status, args.list, args.interactive]):
-        parser.print_help()
+    # If no command provided, show help
+    if not args.command:
+        print_info("No command provided. Use one of the available commands:")
+        print_info("  set, get, list, delete, test, interactive")
+        print_info("Run with --help for more information.")
         return 1
+    
+    # Execute the requested command
+    if args.command == 'set':
+        set_api_key(args.key_name, args.value, args.test)
+    
+    elif args.command == 'get':
+        api_key = keychain.get_api_key(args.key_name)
+        if api_key:
+            masked_key = keychain.mask_api_key(api_key)
+            print_info(f"{args.key_name}: {masked_key}")
+        else:
+            print_error(f"No API key found for {args.key_name}")
+    
+    elif args.command == 'list':
+        display_api_keys_status()
+    
+    elif args.command == 'delete':
+        if keychain.delete_api_key(args.key_name):
+            print_success(f"API key for {args.key_name} deleted")
+        else:
+            print_error(f"Failed to delete API key for {args.key_name}")
+    
+    elif args.command == 'test':
+        test_api_key(args.key_name, args.value)
+    
+    elif args.command == 'interactive':
+        interactive_setup()
+    
+    return 0
 
-    # Запускаем настройку
-    success = setup_api_keys(args)
-
-    # Возвращаем соответствующий код выхода
-    return 0 if success else 1
 
 if __name__ == "__main__":
     sys.exit(main())

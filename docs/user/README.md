@@ -16,9 +16,11 @@ This section is intended for end users of meet2obsidian. Here you'll find inform
 - Directory Monitoring
 - Working with Note Templates
 - Settings Configuration
+- [API Keys Management](usage/api-keys-management.md)
 
 ### Troubleshooting
 - Common Issues
+- [Video Troubleshooting](troubleshooting/video-troubleshooting.md)
 - Working with Logs
 - Frequently Asked Questions
 

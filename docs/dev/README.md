@@ -16,6 +16,8 @@ This section is intended for developers working on the meet2obsidian project. He
 - Development Environment
 - Dependencies
 - Testing Setup
+- [API Keys Setup](setup/API%20Keys%20Setup.md) - Tool for managing API keys
+- [Video Validation Tool](setup/Video%20Validation%20Tool.md) - Tool for validating video files
 
 ### Development
 - Coding Standards

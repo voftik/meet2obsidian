@@ -201,21 +201,30 @@ class ConfigManager:
             self.logger.error(f"Ошибка при установке значения для {key}: {str(e)}")
             return False
     
+    def get_config(self) -> Dict[str, Any]:
+        """
+        Получает текущую конфигурацию.
+
+        Returns:
+            dict: Текущая конфигурация
+        """
+        return self.config
+
     def validate_config(self) -> List[str]:
         """
         Проверяет конфигурацию на наличие необходимых полей и корректность значений.
-        
+
         Returns:
             list: Список сообщений об ошибках, пустой список если ошибок нет
         """
         errors = []
-        
+
         # Проверяем наличие основных разделов
         required_sections = ['paths', 'api', 'processing', 'system']
         for section in required_sections:
             if section not in self.config:
                 errors.append(f"Отсутствует обязательный раздел: {section}")
-        
+
         # API валидации определены тестами, не добавляем лишних проверок
         if 'api' in self.config:
             # Rev.ai и Claude разделы
@@ -223,14 +232,14 @@ class ConfigManager:
                 errors.append("Отсутствует обязательный раздел: api.rev_ai")
             if 'claude' not in self.config['api']:
                 errors.append("Отсутствует обязательный раздел: api.claude")
-            
+
             # Проверка temperature
             if 'claude' in self.config['api'] and isinstance(self.config['api']['claude'], dict):
                 if 'temperature' in self.config['api']['claude']:
                     temp = self.config['api']['claude']['temperature']
                     if not isinstance(temp, (int, float)) or temp < 0 or temp > 1:
                         errors.append("api.claude.temperature должно быть числом от 0 до 1")
-        
+
         # Проверяем типы других важных полей
         if 'processing' in self.config:
             if 'delete_video_files' in self.config['processing'] and not isinstance(self.config['processing']['delete_video_files'], bool):
@@ -239,7 +248,7 @@ class ConfigManager:
                 errors.append("processing.delete_audio_files должно быть логическим")
             if 'process_interval' in self.config['processing'] and not isinstance(self.config['processing']['process_interval'], (int, float)):
                 errors.append("processing.process_interval должно быть числом")
-        
+
         return errors
     
     def _create_default_config(self) -> Dict[str, Any]:

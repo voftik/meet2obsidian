@@ -1,195 +1,225 @@
-# Управление API-ключами
+# API Keys Management
 
-## Обзор
+## Overview
 
-Meet2Obsidian использует внешние сервисы для расшифровки речи в текст и анализа текста. Для использования этих сервисов вам необходимо настроить соответствующие API-ключи. Это руководство объясняет, как получить, настроить и управлять API-ключами, необходимыми для meet2obsidian.
+Meet2Obsidian uses external services for speech-to-text transcription and text analysis. To use these services, you need to configure the appropriate API keys. This guide explains how to obtain, configure, and manage the API keys required for meet2obsidian.
 
-## Необходимые API-ключи
+## Required API Keys
 
-Meet2Obsidian требует следующие API-ключи:
+Meet2Obsidian requires the following API keys:
 
-1. **API-ключ Rev.ai**: Используется для преобразования речи в текст из аудиозаписей встреч.
-2. **API-ключ Claude**: Используется для анализа транскриптов и создания структурированных заметок.
+1. **Rev.ai API Key**: Used for converting speech to text from meeting audio recordings.
+2. **Claude API Key**: Used for analyzing transcripts and creating structured notes.
 
-## Получение API-ключей
+## Obtaining API Keys
 
-### API-ключ Rev.ai
+### Rev.ai API Key
 
-1. Перейдите на сайт [Rev.ai](https://www.rev.ai/) и создайте учетную запись.
-2. Перейдите в настройки вашей учетной записи или панель разработчика.
-3. Создайте новый API-ключ.
-4. Скопируйте API-ключ для настройки в meet2obsidian.
+1. Go to the [Rev.ai](https://www.rev.ai/) website and create an account.
+2. Navigate to your account settings or developer dashboard.
+3. Create a new API key.
+4. Copy the API key for configuration in meet2obsidian.
 
-### API-ключ Claude
+### Claude API Key
 
-1. Перейдите на сайт [Anthropic's Claude](https://console.anthropic.com/) и создайте учетную запись.
-2. Перейдите в раздел API в панели управления вашей учетной записи.
-3. Создайте новый API-ключ.
-4. Скопируйте API-ключ для настройки в meet2obsidian.
+1. Go to [Anthropic's Claude](https://console.anthropic.com/) website and create an account.
+2. Navigate to the API section in your account dashboard.
+3. Create a new API key.
+4. Copy the API key for configuration in meet2obsidian.
 
-## Настройка API-ключей
+## Setting Up API Keys
 
-Meet2Obsidian предоставляет несколько способов настройки API-ключей:
+Meet2Obsidian provides several ways to configure API keys:
 
-### Использование команды настройки CLI
+### Using the CLI Setup Command
 
-Самый простой способ настроить все необходимые API-ключи одновременно:
+The easiest way to set up all required API keys at once:
 
 ```bash
 meet2obsidian apikeys setup
 ```
 
-Эта команда предложит вам ввести оба API-ключа безопасно (ввод будет скрыт).
+This command will prompt you to enter both API keys securely (input will be hidden).
 
-### Установка отдельных API-ключей
+### Setting Individual API Keys
 
-Вы можете установить каждый API-ключ по отдельности с помощью следующих команд:
+You can set each API key individually using the following commands:
 
 ```bash
-# Установка API-ключа Rev.ai
+# Set Rev.ai API key
 meet2obsidian apikeys set rev_ai
 
-# Установка API-ключа Claude
+# Set Claude API key
 meet2obsidian apikeys set claude
 ```
 
-Вам будет предложено безопасно ввести значение API-ключа.
+You will be prompted to enter the API key value securely.
 
-### Использование скрипта настройки
+### Using the Setup Script
 
-Альтернативно, вы можете использовать включенный скрипт настройки:
+Alternatively, you can use the included setup script with expanded functionality:
 
 ```bash
-python scripts/setup_api_keys.py --revai YOUR_REV_AI_KEY --claude YOUR_CLAUDE_KEY
+# View help and available commands
+./scripts/setup_api_keys.py --help
+
+# Interactive setup (guided process)
+./scripts/setup_api_keys.py interactive
+
+# Set a specific API key
+./scripts/setup_api_keys.py set rev_ai
+./scripts/setup_api_keys.py set claude --value "your_api_key"
+
+# Set and test an API key
+./scripts/setup_api_keys.py set rev_ai --test
 ```
 
-## Проверка API-ключей
+The setup script provides additional features not available through the CLI:
+- API key validation before storing
+- Interactive guided setup
+- Detailed error messages
+- Rich formatted output
 
-Вы можете проверить, настроены ли и действительны ли ваши API-ключи:
+## Checking API Keys
 
-### Проверка статуса настройки
+You can verify if your API keys are configured and valid:
+
+### Checking Configuration Status
 
 ```bash
-# Показать список всех необходимых API-ключей и их статус настройки
+# Show a list of all required API keys and their setup status
 meet2obsidian apikeys list
+
+# Using the setup script
+./scripts/setup_api_keys.py list
 ```
 
-Пример вывода:
+Example output:
 ```
-Статус API-ключей:
+API Keys Status:
 ------------------------
-rev_ai      : Настроен
-claude      : Не настроен
+rev_ai      : Set      : abcd***
+claude      : Not Set
 ```
 
-### Тестирование API-ключей
+### Testing API Keys
 
-Чтобы проверить, что ваши API-ключи не только настроены, но и действительны:
+To verify that your API keys are not only configured but also valid:
 
 ```bash
-python scripts/setup_api_keys.py --test
+# Test specific API key
+./scripts/setup_api_keys.py test rev_ai
+
+# Test provided API key value
+./scripts/setup_api_keys.py test claude --value "your_api_key"
 ```
 
-Это проверит каждый настроенный API-ключ, сделав простой тестовый API-вызов.
+This will check each configured API key by making a simple test API call.
 
-## Управление API-ключами
+## Managing API Keys
 
-### Просмотр API-ключей
+### Viewing API Keys
 
-Вы можете проверить конкретный API-ключ:
+You can check a specific API key:
 
 ```bash
-# Просмотр маскированного API-ключа (по умолчанию)
+# View masked API key (default)
 meet2obsidian apikeys get rev_ai
 
-# Просмотр фактического значения API-ключа (использовать с осторожностью)
-meet2obsidian apikeys get rev_ai --show
+# Using the setup script
+./scripts/setup_api_keys.py get rev_ai
 ```
 
-### Удаление API-ключей
+### Deleting API Keys
 
-Если вам нужно удалить API-ключ:
+If you need to remove an API key:
 
 ```bash
 meet2obsidian apikeys delete rev_ai
+
+# Using the setup script
+./scripts/setup_api_keys.py delete rev_ai
 ```
 
-Вам будет предложено подтвердить это действие.
+You will be prompted to confirm this action.
 
-## Обновление API-ключей
+## Updating API Keys
 
-Если вам нужно обновить API-ключ (например, при создании нового ключа), просто установите его снова:
+If you need to update an API key (for example, when creating a new key), simply set it again:
 
 ```bash
 meet2obsidian apikeys set rev_ai
+
+# Or using the setup script
+./scripts/setup_api_keys.py set rev_ai
 ```
 
-Новое значение заменит старое.
+The new value will replace the old one.
 
-## Безопасность API-ключей
+## API Key Security
 
-Meet2Obsidian серьезно относится к безопасности и реализует следующие меры для защиты ваших API-ключей:
+Meet2Obsidian takes security seriously and implements the following measures to protect your API keys:
 
-1. **Безопасное хранение**: API-ключи хранятся в безопасном хранилище учетных данных вашей операционной системы (macOS Keychain).
-2. **Шифрование**: Ключи шифруются в состоянии покоя с использованием механизмов безопасности ОС.
-3. **Минимальное раскрытие**: Полные значения API-ключей никогда не логируются и не отображаются, если это явно не запрошено.
-4. **Только локально**: Ваши API-ключи никогда не покидают ваш компьютер, кроме как при прямых API-вызовах соответствующим сервисам.
+1. **Secure Storage**: API keys are stored in your operating system's secure credential store (macOS Keychain).
+2. **Encryption**: Keys are encrypted at rest using the OS security mechanisms.
+3. **Minimal Disclosure**: Full API key values are never logged or displayed unless explicitly requested.
+4. **Local Only**: Your API keys never leave your computer except for direct API calls to the respective services.
 
-## Устранение неполадок
+## Troubleshooting
 
-### API-ключ не найден
+### API Key Not Found
 
-Если вы получаете ошибку, указывающую, что API-ключ не найден:
+If you receive an error indicating that an API key is not found:
 
-1. Проверьте, настроен ли ключ, используя `meet2obsidian apikeys list`
-2. Если не настроен, настройте ключ, используя `meet2obsidian apikeys set ИМЯ_КЛЮЧА`
+1. Check if the key is configured using `meet2obsidian apikeys list`
+2. If not configured, set up the key using `meet2obsidian apikeys set KEY_NAME`
 
-### Недействительный API-ключ
+### Invalid API Key
 
-Если вы получаете ошибку, указывающую, что API-ключ недействителен:
+If you receive an error indicating that an API key is invalid:
 
-1. Проверьте правильность API-ключа, проверив в панели управления соответствующего сервиса
-2. При необходимости обновите API-ключ, используя `meet2obsidian apikeys set ИМЯ_КЛЮЧА`
-3. Проверьте API-ключ, используя `python scripts/setup_api_keys.py --test`
+1. Check the correctness of the API key by verifying in the respective service's dashboard
+2. Update the API key if necessary using `meet2obsidian apikeys set KEY_NAME`
+3. Test the API key using `./scripts/setup_api_keys.py test KEY_NAME`
 
-### Проблемы с доступом к хранилищу ключей
+### Keychain Access Issues
 
-Если у вас возникают проблемы с доступом к хранилищу ключей:
+If you have problems accessing the keychain:
 
-1. Убедитесь, что у вас есть соответствующий доступ к хранилищу ключей
-2. Система может запросить ваш пароль при доступе к хранилищу ключей
-3. Убедитесь, что ваше хранилище ключей разблокировано
+1. Ensure you have the appropriate access to the keychain
+2. The system may request your password when accessing the keychain
+3. Make sure your keychain is unlocked
 
-## Лучшие практики
+## Best Practices
 
-1. **Регулярно обновляйте ключи**: Периодически создавайте новые API-ключи и обновляйте их в meet2obsidian.
-2. **Используйте выделенные ключи**: По возможности создавайте API-ключи специально для meet2obsidian, а не делитесь ключами с другими приложениями.
-3. **Отслеживайте использование**: Регулярно проверяйте использование вашего API на соответствующих панелях управления сервисами, чтобы убедиться в отсутствии несанкционированного использования.
-4. **Установите соответствующие лимиты**: По возможности настройте лимиты использования на стороне поставщика API, чтобы предотвратить неожиданные расходы.
+1. **Rotate Keys Regularly**: Periodically create new API keys and update them in meet2obsidian.
+2. **Use Dedicated Keys**: When possible, create API keys specifically for meet2obsidian rather than sharing keys with other applications.
+3. **Monitor Usage**: Regularly check your API usage on the respective service dashboards to ensure there's no unauthorized use.
+4. **Set Appropriate Limits**: Where possible, configure usage limits on the API provider side to prevent unexpected costs.
 
-## Квоты и цены API
+## API Quotas and Pricing
 
-Помните, что сервисы Rev.ai и Claude API имеют свои модели ценообразования и квоты использования:
+Remember that Rev.ai and Claude API services have their own pricing models and usage quotas:
 
-- **Rev.ai**: Обычно взимает плату за минуту транскрибированного аудио.
-- **Claude API**: Обычно взимает плату за токен входных и выходных данных.
+- **Rev.ai**: Typically charges per minute of transcribed audio.
+- **Claude API**: Typically charges per token of input and output.
 
-Обязательно проверьте текущие модели ценообразования на соответствующих веб-сайтах и отслеживайте свое использование, чтобы избежать неожиданных расходов.
+Be sure to check the current pricing models on the respective websites and monitor your usage to avoid unexpected costs.
 
-## Часто задаваемые вопросы
+## Frequently Asked Questions
 
-**В: Можно ли использовать meet2obsidian без API-ключей?**
+**Q: Can I use meet2obsidian without API keys?**
 
-О: Нет, API-ключи Rev.ai и Claude необходимы для функционирования основных возможностей meet2obsidian. Без них приложение не сможет выполнять транскрипцию или анализ содержимого.
+A: No, the Rev.ai and Claude API keys are necessary for the core functionalities of meet2obsidian to work. Without them, the application will not be able to perform transcription or content analysis.
 
-**В: Могу ли я использовать альтернативные сервисы вместо Rev.ai или Claude?**
+**Q: Can I use alternative services instead of Rev.ai or Claude?**
 
-О: В настоящее время meet2obsidian поддерживает только API Rev.ai и Claude. Поддержка альтернативных сервисов может быть добавлена в будущих версиях.
+A: Currently, meet2obsidian only supports the Rev.ai and Claude APIs. Support for alternative services may be added in future versions.
 
-**В: Как долго действительны мои API-ключи?**
+**Q: How long are my API keys valid?**
 
-О: Срок действия API-ключей зависит от политики каждого поставщика API. Некоторые ключи не имеют срока действия, в то время как другие могут требовать обновления через определенные периоды времени. Проверьте политику поставщика вашего API для получения конкретной информации.
+A: API key validity depends on each API provider's policy. Some keys have no expiration, while others may require renewal after certain periods. Check your API provider's policy for specific information.
 
-**В: Что делать, если я подозреваю, что мой API-ключ скомпрометирован?**
+**Q: What should I do if I suspect my API key has been compromised?**
 
-О: Немедленно отозвите ключ на веб-сайте поставщика API и создайте новый. Затем обновите новый ключ в meet2obsidian с помощью соответствующей команды `apikeys set`.
+A: Immediately revoke the key on the API provider's website and create a new one. Then update the new key in meet2obsidian using the appropriate `apikeys set` command.
