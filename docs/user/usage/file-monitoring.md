@@ -1,116 +1,245 @@
-# File Monitoring
+# File Monitoring and Processing
 
-Meet2Obsidian automatically monitors specified directories for new video files and processes them as they appear. This guide explains how the file monitoring system works and how to configure it.
+Meet2Obsidian автоматически отслеживает указанные директории на наличие новых видеофайлов и обрабатывает их по мере появления. Это руководство объясняет, как работают системы мониторинга файлов и обработки очереди, а также как их настроить.
 
-## How File Monitoring Works
+## Как работает мониторинг файлов и обработка очереди
 
-Meet2Obsidian uses an advanced event-based file monitoring system to detect when new video files are created in your monitored directories. It efficiently watches for file system events and automatically processes eligible files once they have finished copying.
+Meet2Obsidian использует двухуровневую систему для обработки видеофайлов:
 
-## Key Features
+1. **Система мониторинга файлов** (FileMonitor) отслеживает указанную директорию на наличие новых видеофайлов с помощью событий файловой системы.
 
-- **Efficient Monitoring**: Uses system native file system events for immediate detection of new files
-- **File Stability Detection**: Ensures files are completely copied before processing begins
-- **Pattern Filtering**: Only processes files that match configured patterns (e.g., video files)
-- **Persistence**: Remembers which files have been processed to avoid duplicates after restart
-- **Low Resource Usage**: Minimal impact on CPU and disk I/O compared to traditional polling approaches
+2. **Система обработки очереди** (ProcessingQueue) управляет очередью файлов для обработки, поддерживает приоритеты, отслеживает состояние обработки и обеспечивает восстановление после сбоев.
 
-## Configuration Options
+Весь процесс работает следующим образом:
+1. Пользователь помещает видеофайлы в настроенную директорию (`paths.video_directory`)
+2. FileMonitor обнаруживает новые файлы и добавляет их в очередь обработки
+3. ProcessingQueue обрабатывает файлы в соответствии с их приоритетом
+4. После успешной обработки файлы отмечаются как завершенные
 
-You can configure file monitoring through the `meet2obsidian` CLI:
+## Ключевые возможности
 
-### Setting the Video Directory
+### Мониторинг файлов
 
-```bash
-meet2obsidian config set video_directory "~/Videos/Meetings"
+- **Эффективное отслеживание**: Использует нативные события файловой системы для немедленного обнаружения новых файлов
+- **Определение стабильности файлов**: Гарантирует, что файлы полностью скопированы перед началом обработки
+- **Фильтрация по шаблонам**: Обрабатывает только файлы, соответствующие настроенным шаблонам (например, видеофайлы)
+- **Персистентность**: Запоминает, какие файлы были обработаны, чтобы избежать дублирования после перезапуска
+- **Низкое использование ресурсов**: Минимальное влияние на CPU и дисковый ввод/вывод
+
+### Система обработки очереди
+
+- **Приоритетная обработка**: Файлы с более высоким приоритетом обрабатываются первыми
+- **Отслеживание состояния**: Полное отслеживание состояния каждого файла (ожидание, обработка, завершено, ошибка)
+- **Обработка ошибок**: Автоматические повторные попытки обработки файлов с ошибками
+- **Параллельная обработка**: Поддержка многопоточной обработки для лучшей производительности
+- **Восстановление после сбоев**: Сохранение и загрузка состояния очереди для восстановления после перезапуска
+
+## Настройка директории для видеофайлов
+
+### Где разместить ваши видеофайлы
+
+По умолчанию Meet2Obsidian ищет видеофайлы в директории:
+
+```
+/Users/username/Documents/meet_records/
 ```
 
-This sets the directory where Meet2Obsidian will look for new video files.
-
-### Setting File Patterns
+Вы можете изменить эту директорию через конфигурационный файл или с помощью CLI:
 
 ```bash
-meet2obsidian config set video_patterns '["*.mp4", "*.mov", "*.webm"]'
+meet2obsidian config set paths.video_directory "/path/to/your/videos"
 ```
 
-This defines which file types Meet2Obsidian will process. By default, the following patterns are included:
+> **Важно**: Это ключевая настройка — система не будет отслеживать файлы в других директориях, кроме указанной в `paths.video_directory`.
+
+### Проверка текущей директории
+
+Чтобы узнать, какая директория сейчас настроена для отслеживания:
+
+```bash
+meet2obsidian config get paths.video_directory
+```
+
+## Параметры конфигурации
+
+Вы можете настроить мониторинг файлов и обработку очереди через CLI `meet2obsidian`:
+
+### Настройка шаблонов файлов
+
+```bash
+meet2obsidian config set processing.file_patterns '["*.mp4", "*.mov", "*.webm", "*.mkv"]'
+```
+
+По умолчанию отслеживаются следующие типы файлов:
 - `*.mp4`
 - `*.mov`
 - `*.webm`
 - `*.mkv`
 
-### Setting Minimum File Age
+### Настройка минимального возраста файла
 
 ```bash
-meet2obsidian config set min_file_age 10
+meet2obsidian config set processing.min_file_age_seconds 10
 ```
 
-This sets how many seconds a file must be stable (not changing size) before processing begins. The default is 5 seconds.
+Этот параметр определяет, сколько секунд файл должен быть стабильным (не меняющимся в размере) перед началом обработки. По умолчанию — 5 секунд.
 
-## Checking Monitoring Status
+### Настройка параллельной обработки
 
-You can check the status of the file monitoring service using the CLI:
+```bash
+meet2obsidian config set processing.max_concurrent_files 2
+```
+
+Устанавливает максимальное количество файлов, которые могут обрабатываться одновременно. По умолчанию — 2.
+
+### Настройка попыток повторной обработки
+
+```bash
+meet2obsidian config set processing.max_retries 3
+```
+
+Определяет, сколько раз система попытается повторно обработать файл в случае ошибки. По умолчанию — 3.
+
+## Проверка статуса мониторинга
+
+Вы можете проверить статус службы мониторинга файлов с помощью CLI:
 
 ```bash
 meet2obsidian status
 ```
 
-This will show you information including:
-- Whether the monitoring service is running
-- The directory being monitored
-- File patterns being watched
-- Number of files processed
-- Any pending files
+Эта команда покажет информацию, включая:
+- Запущена ли служба мониторинга
+- Отслеживаемую директорию
+- Отслеживаемые шаблоны файлов
+- Количество обработанных файлов
+- Любые ожидающие обработки файлы
+- Файлы, находящиеся в процессе обработки
+- Последние ошибки обработки
 
-## Viewing Logs
+Для получения более подробной информации о состоянии очереди:
 
-To see detailed logs of file monitoring activity:
+```bash
+meet2obsidian status --verbose
+```
+
+## Просмотр логов
+
+Для просмотра подробных логов активности мониторинга файлов:
 
 ```bash
 meet2obsidian logs
 ```
 
-You can also filter logs to see just file monitoring related entries:
+Вы также можете отфильтровать логи, чтобы видеть только записи, связанные с мониторингом файлов:
 
 ```bash
 meet2obsidian logs --filter "file monitor"
 ```
 
-## Stopping and Starting Monitoring
-
-The file monitoring service starts automatically with the Meet2Obsidian service. You can control it with:
+Или логи, связанные с обработкой файлов:
 
 ```bash
-# Start the service
-meet2obsidian service start
-
-# Stop the service
-meet2obsidian service stop
+meet2obsidian logs --filter "processing"
 ```
 
-## Troubleshooting
+## Остановка и запуск мониторинга
 
-### Files Not Being Detected
+Служба мониторинга файлов запускается автоматически со службой Meet2Obsidian. Вы можете управлять ею с помощью:
 
-If your files aren't being detected, check:
+```bash
+# Запуск службы
+meet2obsidian service start
 
-1. **Correct Directory**: Verify the `video_directory` setting points to the correct location
-2. **File Patterns**: Make sure your file types are included in the `video_patterns` setting
-3. **Permissions**: Ensure Meet2Obsidian has read access to the directory
-4. **Service Status**: Check that the service is running with `meet2obsidian status`
+# Остановка службы
+meet2obsidian service stop
 
-### Files Detected But Not Processed
+# Перезапуск службы
+meet2obsidian service restart
+```
 
-If files are detected but not processed:
+## Настройка обработки через конфигурационный файл
 
-1. **File Stability**: Files might still be copying - increase `min_file_age` if necessary
-2. **Previous Processing**: Check if the file was already processed (listed in status report)
-3. **Check Logs**: Look for any errors in the logs with `meet2obsidian logs`
+Все настройки также могут быть определены в конфигурационном файле YAML:
 
-## Best Practices
+```yaml
+paths:
+  video_directory: "/Users/username/Documents/meet_records"
+  obsidian_vault: "/Users/username/Documents/Obsidian/MainVault"
+  log_directory: "/Users/username/Library/Logs/meet2obsidian"
 
-For optimal performance:
+processing:
+  file_patterns: ["*.mp4", "*.mov", "*.webm", "*.mkv"]
+  min_file_age_seconds: 5
+  max_concurrent_files: 2
+  max_retries: 3
+  poll_interval: 60  # для устаревшего метода опроса (не используется, если доступны события ФС)
+```
 
-1. **Use a Dedicated Directory**: Monitor a specific directory rather than a general-purpose one
-2. **Limit File Types**: Only include the specific file types you need in `video_patterns`
-3. **Sufficient Stability Time**: Set `min_file_age` high enough to ensure complete file copy
-4. **Regular Status Checks**: Use `meet2obsidian status` to verify monitoring is working correctly
+Чтобы импортировать конфигурацию из файла:
+
+```bash
+meet2obsidian config import /path/to/your/config.yaml
+```
+
+## Устранение неполадок
+
+### Файлы не обнаруживаются
+
+Если ваши файлы не обнаруживаются, проверьте:
+
+1. **Правильную директорию**: Убедитесь, что настройка `paths.video_directory` указывает на правильное расположение
+2. **Шаблоны файлов**: Убедитесь, что ваши типы файлов включены в настройку `processing.file_patterns`
+3. **Разрешения**: Убедитесь, что Meet2Obsidian имеет доступ на чтение к директории
+4. **Статус службы**: Проверьте, что служба запущена с помощью `meet2obsidian status`
+
+### Файлы обнаружены, но не обрабатываются
+
+Если файлы обнаруживаются, но не обрабатываются:
+
+1. **Стабильность файла**: Файлы могут всё ещё копироваться — увеличьте `processing.min_file_age_seconds`, если необходимо
+2. **Предыдущая обработка**: Проверьте, был ли файл уже обработан (указан в отчёте о статусе)
+3. **Проверьте логи**: Ищите любые ошибки в логах с помощью `meet2obsidian logs`
+4. **Очередь обработки**: Проверьте состояние очереди обработки с помощью `meet2obsidian status --verbose`
+
+### Ошибки при обработке файлов
+
+Если файлы добавляются в очередь, но завершаются с ошибками:
+
+1. **Проверьте логи ошибок**: Используйте `meet2obsidian logs --level error` для просмотра ошибок
+2. **Проверьте API-ключи**: Убедитесь, что API-ключи для сервисов транскрипции настроены правильно
+3. **Формат файлов**: Удостоверьтесь, что файлы имеют корректный формат и не повреждены
+
+## Лучшие практики
+
+Для оптимальной производительности:
+
+1. **Используйте отдельную директорию**: Отслеживайте специальную директорию, а не директорию общего назначения
+2. **Ограничьте типы файлов**: Включайте в `processing.file_patterns` только те типы файлов, которые вам нужны
+3. **Достаточное время стабильности**: Установите `processing.min_file_age_seconds` достаточно высоким, чтобы обеспечить полное копирование файла
+4. **Регулярные проверки статуса**: Используйте `meet2obsidian status` для проверки корректной работы мониторинга
+5. **Приоритетизация файлов**: Если у вас есть файлы, которые нужно обработать в первую очередь, переместите их в отдельную директорию с более высоким приоритетом
+
+## Команды, связанные с обработкой файлов
+
+```bash
+# Просмотр всей очереди обработки
+meet2obsidian process list
+
+# Добавление файла в очередь с высоким приоритетом (3)
+meet2obsidian process add /path/to/file.mp4 --priority 3
+
+# Приостановка обработки очереди
+meet2obsidian process pause
+
+# Возобновление обработки очереди
+meet2obsidian process resume
+
+# Удаление файла из очереди
+meet2obsidian process remove /path/to/file.mp4
+
+# Повторная обработка файла, завершившегося с ошибкой
+meet2obsidian process retry /path/to/file.mp4
+```
+
+> **Примечание**: Эти команды доступны, начиная с версии 1.2.0 Meet2Obsidian.
