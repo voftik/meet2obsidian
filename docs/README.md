@@ -28,6 +28,7 @@ Current implemented features:
 
 - **Epic 7: Tests for the logging module** - Created comprehensive unit tests for the logging functionality
 - **Epic 8: Implementation of logging module** - Implemented structured logging with structlog, file rotation, and various logging levels
+- **Epic 9: Tests for secure API key storage** - Created unit and integration tests for secure storage of API keys in system keychain
 
 ### Coming Soon
 

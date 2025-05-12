@@ -30,6 +30,9 @@ This section is intended for developers working on the meet2obsidian project. He
 - Content Analyzer
 - Note Generator
 - Obsidian Integration
+- [Logging](components/Logging.md) - Structured logging system
+- [API Key Security](components/API%20Key%20Security.md) - Secure API key storage system
+- [API Key Management](components/API%20Key%20Management.md) - API key management
 
 ### Roadmap
 - Current Status

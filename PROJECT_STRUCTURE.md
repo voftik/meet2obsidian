@@ -24,7 +24,9 @@ meet2obsidian/
 │   ├── dev/
 │   │   ├── README.md
 │   │   └── components/
-│   │       └── API Key Management.md
+│   │       ├── API Key Management.md
+│   │       ├── API Key Security.md
+│   │       └── Logging.md
 │   ├── development.md
 │   ├── examples/
 │   │   ├── config-examples/
@@ -42,8 +44,17 @@ meet2obsidian/
 │   ├── usage.md
 │   └── user/
 │       ├── README.md
-│       └── getting-started/
-│           └── installation.md
+│       ├── getting-started/
+│       │   └── installation.md
+│       └── usage/
+│           ├── api-keys.md
+│           ├── cli-commands.md
+│           └── logging.md
+├── examples/
+│   ├── import_test.py
+│   ├── logging_example.py
+│   ├── security_example.py
+│   └── test_logging_compliance.py
 ├── meet2obsidian/
 │   ├── __init__.py
 │   ├── api/
@@ -55,6 +66,8 @@ meet2obsidian/
 │   │   └── extractor.py
 │   ├── cache.py
 │   ├── cli.py
+│   ├── cli_commands/
+│   │   └── logs_command.py
 │   ├── config.py
 │   ├── core.py
 │   ├── monitor.py
@@ -76,19 +89,27 @@ meet2obsidian/
 │   └── setup_launchagent.sh
 ├── setup.py
 ├── tmp/
+│   ├── completed_epics_summary.md
 │   ├── config_implementation_fixes.md
+│   ├── epic7_logging_tests_report.md
+│   ├── epic8_implementation_report.md
+│   ├── epic9_implementation_report.md
 │   └── logging_tests_documentation.md
 └── tests/
     ├── __init__.py
+    ├── conftest.py
     ├── integration/
     │   ├── __init__.py
-    │   └── test_pipeline.py
+    │   ├── test_pipeline.py
+    │   └── test_security_integration.py
+    ├── run_tests.py
     └── unit/
         ├── __init__.py
         ├── test_cli.py
         ├── test_config.py
         ├── test_core.py
-        └── test_logging.py
+        ├── test_logging.py
+        └── test_security.py
 ```
 
 ## Mermaid Project Structure Diagram
@@ -128,6 +149,8 @@ graph TD
     DocsDev --> DocsDevReadme["README.md"]
     DocsDev --> DocsDevComponents["components/"]
     DocsDevComponents --> DocsDevComponentsAPIKey["API Key Management.md"]
+    DocsDevComponents --> DocsDevComponentsAPIKeySecurity["API Key Security.md"]
+    DocsDevComponents --> DocsDevComponentsLogging["Logging.md"]
 
     %% Examples
     DocsExamples --> DocsExamplesConfig["config-examples/"]
@@ -147,6 +170,10 @@ graph TD
     DocsUser --> DocsUserReadme["README.md"]
     DocsUser --> DocsUserGettingStarted["getting-started/"]
     DocsUserGettingStarted --> DocsUserGettingStartedInstall["installation.md"]
+    DocsUser --> DocsUserUsage["usage/"]
+    DocsUserUsage --> DocsUserUsageLogging["logging.md"]
+    DocsUserUsage --> DocsUserUsageAPIKeys["api-keys.md"]
+    DocsUserUsage --> DocsUserUsageCLI["cli-commands.md"]
 
     %% Main Python package structure
     Meet2Obsidian --> Meet2ObsidianInit["__init__.py"]
@@ -155,10 +182,14 @@ graph TD
     Meet2Obsidian --> Meet2ObsidianNote["note/"]
     Meet2Obsidian --> Meet2ObsidianUtils["utils/"]
     Meet2Obsidian --> Meet2ObsidianCLI["cli.py"]
+    Meet2Obsidian --> Meet2ObsidianCLICommands["cli_commands/"]
     Meet2Obsidian --> Meet2ObsidianConfig["config.py"]
     Meet2Obsidian --> Meet2ObsidianCore["core.py"]
     Meet2Obsidian --> Meet2ObsidianMonitor["monitor.py"]
     Meet2Obsidian --> Meet2ObsidianCache["cache.py"]
+
+    %% CLI Commands
+    Meet2ObsidianCLICommands --> Meet2ObsidianCLICommandsLogs["logs_command.py"]
 
     %% API Package
     Meet2ObsidianAPI --> Meet2ObsidianAPIInit["__init__.py"]
@@ -189,15 +220,22 @@ graph TD
     %% Tmp files
     TmpFiles --> TmpConfigFixes["config_implementation_fixes.md"]
     TmpFiles --> TmpLoggingDocs["logging_tests_documentation.md"]
+    TmpFiles --> TmpEpic7Report["epic7_logging_tests_report.md"]
+    TmpFiles --> TmpEpic8Report["epic8_implementation_report.md"]
+    TmpFiles --> TmpEpic9Report["epic9_implementation_report.md"]
+    TmpFiles --> TmpEpicsSummary["completed_epics_summary.md"]
 
     %% Tests
     Tests --> TestsInit["__init__.py"]
+    Tests --> TestsConftest["conftest.py"]
+    Tests --> TestsRunTests["run_tests.py"]
     Tests --> TestsIntegration["integration/"]
     Tests --> TestsUnit["unit/"]
 
     %% Integration Tests
     TestsIntegration --> TestsIntegrationInit["__init__.py"]
     TestsIntegration --> TestsIntegrationPipeline["test_pipeline.py"]
+    TestsIntegration --> TestsIntegrationSecurity["test_security_integration.py"]
 
     %% Unit Tests
     TestsUnit --> TestsUnitInit["__init__.py"]
@@ -205,6 +243,7 @@ graph TD
     TestsUnit --> TestsUnitConfig["test_config.py"]
     TestsUnit --> TestsUnitCore["test_core.py"]
     TestsUnit --> TestsUnitLogging["test_logging.py"]
+    TestsUnit --> TestsUnitSecurity["test_security.py"]
 
     %% Configuration Files
     ConfigFiles --> ProjectToml["pyproject.toml"]
@@ -233,26 +272,38 @@ graph TD
 
 The project is in active development. Current status:
 
-- **Core implementation**: 
+- **Core implementation**:
   - Configuration module (`config.py`) implementation completed ✅
+  - Logging module fully implemented with structured logging and rotation ✅
+  - Security module for API key management fully implemented ✅
   - Basic structure is set up for other modules
-  - Utils module partially implemented
+  - CLI commands system established
 
-- **Documentation**: 
-  - Comprehensive documentation files exist, detailing the planned architecture and requirements
+- **Documentation**:
+  - Comprehensive documentation for completed components
+  - Developer docs for API Key Security and Logging components
+  - User documentation for Logging and API Keys
+  - CLI command documentation
   - Internal developer docs available in `docs/internal_docs/`
   - API documentation in progress
 
-- **Tests**: 
-  - Unit tests for configuration module complete and passing ✅
-  - Unit tests for logging module created (Epic 7) ✅
+- **Tests**:
+  - Full testing infrastructure with conftest.py and run_tests.py ✅
+  - Unit and integration tests for all implemented components ✅
+  - Support for test markers and selective test execution ✅
   - Test-driven development approach being followed
+
+- **Examples**:
+  - Example of logging functionality
+  - Example of secure API key management
+  - Comprehensive examples showing usage of all implemented components
 
 Key functional components:
 
 - `utils/security.py`: KeychainManager for securely storing API keys in macOS Keychain ✅
 - `config.py`: Configuration management system with JSON support and validation ✅
 - `utils/logging.py`: Structured logging system with JSON format and rotation ✅
+- `cli_commands/logs_command.py`: CLI commands for log management ✅
 - `scripts/setup_api_keys.py`: Script for setting up and testing API keys ✅
 
 ### Completed Epics:
@@ -267,5 +318,11 @@ Key functional components:
   - ✅ Task 2: Implement file and console output
   - ✅ Task 3: Configure log rotation
   - ✅ Task 4: Create convenient interface for obtaining loggers
+- **Epic 9**: Tests for secure API key storage ✅ (2025-05-12)
+  - ✅ Task 1: Tests for saving keys in Keychain
+  - ✅ Task 2: Tests for retrieving keys from Keychain
+  - ✅ Task 3: Tests for deleting keys
+  - ✅ Task 4: Tests for error handling
+  - ✅ Task 5: Integration tests with real system keychain
 
 Last Updated: 2025-05-12
