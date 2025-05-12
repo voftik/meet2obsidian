@@ -2,7 +2,7 @@
 Unit tests for the FileManager class.
 
 This module contains tests for file operations: safe deletion, moving files,
-permission checks, and error handling.
+permission checks, error handling, temporary file creation, and disk space management.
 """
 
 import pytest
@@ -14,6 +14,7 @@ import errno
 import time
 import shutil
 import sys
+import uuid
 
 # Import the actual implementation
 from meet2obsidian.utils.file_manager import FileManager
@@ -968,3 +969,150 @@ class TestFileOperationErrors:
             
             assert success is False
             assert "timed out" in error.lower() or "timeout" in error.lower()
+
+
+class TestExtendedFunctionality:
+    """Tests for extended file management functionality."""
+
+    def test_create_temp_file(self):
+        """Test creating a temporary file."""
+        manager = FileManager()
+
+        # Test creating an empty temp file
+        success, error, temp_path = manager.create_temp_file(prefix="test_")
+
+        assert success is True
+        assert error is None
+        assert temp_path is not None
+        assert os.path.exists(temp_path)
+        assert "test_" in os.path.basename(temp_path)
+
+        # Clean up
+        os.unlink(temp_path)
+
+        # Test creating a temp file with content
+        content = b"Test content for temporary file"
+        success, error, temp_path = manager.create_temp_file(
+            prefix="test_content_",
+            suffix=".txt",
+            content=content
+        )
+
+        assert success is True
+        assert error is None
+        assert temp_path is not None
+        assert os.path.exists(temp_path)
+        assert temp_path.endswith(".txt")
+
+        # Check content
+        with open(temp_path, 'rb') as f:
+            read_content = f.read()
+        assert read_content == content
+
+        # Clean up
+        os.unlink(temp_path)
+
+    def test_create_temp_file_in_specific_directory(self):
+        """Test creating a temporary file in a specific directory."""
+        manager = FileManager()
+
+        # Create a custom directory
+        custom_dir = os.path.join(tempfile.gettempdir(), f"custom_temp_{os.urandom(4).hex()}")
+        os.makedirs(custom_dir)
+
+        try:
+            # Create temp file in the custom directory
+            success, error, temp_path = manager.create_temp_file(
+                prefix="custom_dir_",
+                dir=custom_dir
+            )
+
+            assert success is True
+            assert error is None
+            assert temp_path is not None
+            assert os.path.exists(temp_path)
+            assert os.path.dirname(temp_path) == custom_dir
+
+            # Clean up
+            os.unlink(temp_path)
+        finally:
+            # Remove the custom directory
+            os.rmdir(custom_dir)
+
+    def test_get_disk_space(self):
+        """Test getting disk space information."""
+        manager = FileManager()
+
+        # Create a temporary directory for the test
+        temp_dir = tempfile.mkdtemp()
+        try:
+            # Get disk space info
+            success, error, space_info = manager.get_disk_space(temp_dir)
+
+            assert success is True
+            assert error is None
+            assert isinstance(space_info, dict)
+
+            # Check that all expected keys are present
+            assert 'total' in space_info
+            assert 'used' in space_info
+            assert 'free' in space_info
+            assert 'available' in space_info
+
+            # Check that values are reasonable
+            assert space_info['total'] > 0
+            assert space_info['used'] >= 0
+            assert space_info['free'] >= 0
+            assert space_info['available'] >= 0
+            assert space_info['total'] >= space_info['free']
+            assert space_info['total'] >= space_info['used']
+        finally:
+            # Clean up
+            os.rmdir(temp_dir)
+
+    def test_has_sufficient_space(self):
+        """Test checking for sufficient disk space."""
+        manager = FileManager()
+
+        # Create a temporary directory for the test
+        temp_dir = tempfile.mkdtemp()
+        try:
+            # Test with a very small required space (should always pass)
+            success, error, has_space = manager.has_sufficient_space(temp_dir, 1024)
+
+            assert success is True
+            assert error is None
+            assert has_space is True
+
+            # Test with a very large required space (likely to fail)
+            # We'll use a ridiculously large value (exabytes)
+            success, error, has_space = manager.has_sufficient_space(temp_dir, 10**19)
+
+            assert success is True
+            assert error is None
+            assert has_space is False
+
+            # Test with nonexistent path
+            nonexistent_path = os.path.join(temp_dir, "nonexistent")
+            success, error, has_space = manager.has_sufficient_space(nonexistent_path, 1024)
+
+            assert success is False
+            assert error is not None
+            assert "not exist" in error.lower()
+            assert has_space is False
+        finally:
+            # Clean up
+            os.rmdir(temp_dir)
+
+    def test_get_disk_space_nonexistent_path(self):
+        """Test getting disk space for nonexistent path."""
+        manager = FileManager()
+
+        # Use a path that definitely doesn't exist
+        nonexistent_path = f"/tmp/nonexistent_path_{uuid.uuid4()}"
+
+        success, error, space_info = manager.get_disk_space(nonexistent_path)
+
+        assert success is False
+        assert error is not None
+        assert space_info is None

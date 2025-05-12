@@ -29,6 +29,7 @@ meet2obsidian/
 │   │   │   ├── AudioExtraction.md
 │   │   │   ├── CLI Architecture.md
 │   │   │   ├── CLI Testing.md
+│   │   │   ├── FileManager.md
 │   │   │   ├── FileMonitor.md
 │   │   │   ├── LaunchAgent.md
 │   │   │   ├── Logging.md
@@ -61,8 +62,10 @@ meet2obsidian/
 │       └── usage/
 │           ├── api-keys-management.md
 │           ├── cli-commands.md
+│           ├── file-management.md
 │           └── logging.md
 ├── examples/
+│   ├── file_manager_example.py
 │   ├── import_test.py
 │   ├── logging_example.py
 │   ├── security_example.py
@@ -102,6 +105,7 @@ meet2obsidian/
 │   │   └── state.py
 │   └── utils/
 │       ├── __init__.py
+│       ├── file_manager.py
 │       ├── file_watcher.py
 │       ├── logging.py
 │       ├── security.py
@@ -170,7 +174,9 @@ meet2obsidian/
         ├── test_processing_queue_recovery.py
         ├── test_processing_state.py
         ├── test_security.py
-        └── test_synthetic_videos.py
+        ├── test_synthetic_videos.py
+        ├── test_file_manager.py
+        └── test_file_manager_extended.py
 ```
 
 ## Mermaid Project Structure Diagram
@@ -215,6 +221,7 @@ graph TD
     DocsDevComponents --> DocsDevComponentsLogging["Logging.md"]
     DocsDevComponents --> DocsDevComponentsCLIArch["CLI Architecture.md"]
     DocsDevComponents --> DocsDevComponentsCLITest["CLI Testing.md"]
+    DocsDevComponents --> DocsDevComponentsFileManager["FileManager.md"]
     DocsDevComponents --> DocsDevComponentsProcessingQueue["ProcessingQueue.md"]
     DocsDevComponents --> DocsDevComponentsProcessingQueueCLI["ProcessingQueueCLI.md"]
     DocsDevComponents --> DocsDevComponentsAudioExtraction["AudioExtraction.md"]
@@ -245,6 +252,7 @@ graph TD
     DocsUserUsage --> DocsUserUsageLogging["logging.md"]
     DocsUserUsage --> DocsUserUsageAPIKeys["api-keys-management.md"]
     DocsUserUsage --> DocsUserUsageCLI["cli-commands.md"]
+    DocsUserUsage --> DocsUserUsageFileManagement["file-management.md"]
 
     %% Main Python package structure
     Meet2Obsidian --> Meet2ObsidianInit["__init__.py"]
@@ -294,6 +302,7 @@ graph TD
     %% Utils Package
     Meet2ObsidianUtils --> Meet2ObsidianUtilsInit["__init__.py"]
     Meet2ObsidianUtils --> Meet2ObsidianUtilsFileWatcher["file_watcher.py"]
+    Meet2ObsidianUtils --> Meet2ObsidianUtilsFileManager["file_manager.py"]
     Meet2ObsidianUtils --> Meet2ObsidianUtilsLogging["logging.py"]
     Meet2ObsidianUtils --> Meet2ObsidianUtilsSecurity["security.py"]
     Meet2ObsidianUtils --> Meet2ObsidianUtilsStatus["status.py"]
@@ -365,6 +374,8 @@ graph TD
     TestsUnit --> TestsUnitProcessCommand["test_process_command.py"]
     TestsUnit --> TestsUnitAudioExtractor["test_audio_extractor.py"]
     TestsUnit --> TestsUnitSyntheticVideos["test_synthetic_videos.py"]
+    TestsUnit --> TestsUnitFileManager["test_file_manager.py"]
+    TestsUnit --> TestsUnitFileManagerExtended["test_file_manager_extended.py"]
 
     %% Test Fixtures
     TestsFixtures --> TestsFixturesConfig["test_config.json"]
@@ -438,6 +449,7 @@ Key functional components:
 - `utils/security.py`: KeychainManager for securely storing API keys in macOS Keychain ✅
 - `config.py`: Configuration management system with JSON support and validation ✅
 - `utils/logging.py`: Structured logging system with JSON format and rotation ✅
+- `utils/file_manager.py`: Comprehensive file management with secure operations and error handling ✅
 - `core.py`: ApplicationManager class for process monitoring and control ✅
 - `launchagent.py`: LaunchAgentManager for macOS autostart integration ✅
 - `monitor.py`: FileMonitor for automatic video file detection and processing ✅
@@ -584,4 +596,27 @@ Key functional components:
   - ✅ Task 7: Create comprehensive documentation for audio extraction component
   - ✅ Task 8: Update project structure and implementation plan
 
-Last Updated: 2025-05-18
+- **Epic 23**: File Management tests implementation ✅ (2025-05-21)
+  - ✅ Task 1: Create unit tests for file removal functionality
+  - ✅ Task 2: Create unit tests for secure file deletion
+  - ✅ Task 3: Create unit tests for directory deletion operations
+  - ✅ Task 4: Create unit tests for file moving and copying functionality
+  - ✅ Task 5: Create unit tests for file permission management
+  - ✅ Task 6: Create unit tests for error handling in file operations
+  - ✅ Task 7: Create test fixtures and helpers for file operation testing
+  - ✅ Task 8: Create comprehensive test report and documentation
+
+- **Epic 24**: File Management implementation ✅ (2025-05-22)
+  - ✅ Task 1: Implement FileManager class with core functionality
+  - ✅ Task 2: Implement safe file deletion operations
+  - ✅ Task 3: Implement secure deletion with multi-pass overwriting
+  - ✅ Task 4: Implement file and directory moving operations
+  - ✅ Task 5: Implement file copying functionality
+  - ✅ Task 6: Implement permission checking and modification
+  - ✅ Task 7: Implement comprehensive error handling with detailed reporting
+  - ✅ Task 8: Add disk space management and temporary file handling
+  - ✅ Task 9: Create integration helper for other components
+  - ✅ Task 10: Create example application demonstrating FileManager usage
+  - ✅ Task 11: Update project documentation with FileManager details
+
+Last Updated: 2025-05-22
