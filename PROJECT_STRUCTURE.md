@@ -26,12 +26,14 @@ meet2obsidian/
 │   │   ├── components/
 │   │   │   ├── API Key Management.md
 │   │   │   ├── API Key Security.md
+│   │   │   ├── AudioExtraction.md
 │   │   │   ├── CLI Architecture.md
 │   │   │   ├── CLI Testing.md
 │   │   │   ├── FileMonitor.md
 │   │   │   ├── LaunchAgent.md
 │   │   │   ├── Logging.md
-│   │   │   └── ProcessingQueue.md
+│   │   │   ├── ProcessingQueue.md
+│   │   │   └── ProcessingQueueCLI.md
 │   │   └── setup/
 │   │       ├── API Keys Setup.md
 │   │       └── Video Validation Tool.md
@@ -121,6 +123,8 @@ meet2obsidian/
 │   ├── epic17_file_monitor_tests_report.md
 │   ├── epic18_file_watcher_implementation_report.md
 │   ├── epic19_processing_queue_report.md
+│   ├── epic20_processing_queue_cli_integration_report.md
+│   ├── epic21_audio_extraction_tests_implementation_plan.md
 │   ├── epic7_logging_tests_report.md
 │   ├── epic8_implementation_report.md
 │   ├── epic9_implementation_report.md
@@ -134,6 +138,7 @@ meet2obsidian/
     ├── integration/
     │   ├── __init__.py
     │   ├── test_application_manager_integration.py
+    │   ├── test_audio_extraction_integration.py
     │   ├── test_cli_integration.py
     │   ├── test_file_monitor_basic.py
     │   ├── test_file_monitor_integration.py
@@ -143,6 +148,7 @@ meet2obsidian/
     │   ├── test_processing_queue.py
     │   ├── test_processing_queue_simplified.py
     │   └── test_security_integration.py
+    ├── run_audio_extractor_tests.py
     ├── run_processing_queue_tests.py
     ├── run_tests.py
     └── unit/
@@ -150,18 +156,21 @@ meet2obsidian/
         ├── test_application_manager.py
         ├── test_application_manager_launchagent.py
         ├── test_application_manager_mock.py
+        ├── test_audio_extractor.py
         ├── test_cli.py
         ├── test_config.py
         ├── test_core.py
         ├── test_file_monitor.py
         ├── test_launchagent.py
         ├── test_logging.py
+        ├── test_process_command.py
         ├── test_processing_queue_add.py
         ├── test_processing_queue_priority.py
         ├── test_processing_queue_process.py
         ├── test_processing_queue_recovery.py
         ├── test_processing_state.py
-        └── test_security.py
+        ├── test_security.py
+        └── test_synthetic_videos.py
 ```
 
 ## Mermaid Project Structure Diagram
@@ -207,6 +216,8 @@ graph TD
     DocsDevComponents --> DocsDevComponentsCLIArch["CLI Architecture.md"]
     DocsDevComponents --> DocsDevComponentsCLITest["CLI Testing.md"]
     DocsDevComponents --> DocsDevComponentsProcessingQueue["ProcessingQueue.md"]
+    DocsDevComponents --> DocsDevComponentsProcessingQueueCLI["ProcessingQueueCLI.md"]
+    DocsDevComponents --> DocsDevComponentsAudioExtraction["AudioExtraction.md"]
     DocsDevSetup --> DocsDevSetupAPIKeys["API Keys Setup.md"]
     DocsDevSetup --> DocsDevSetupVideoVal["Video Validation Tool.md"]
 
@@ -314,6 +325,7 @@ graph TD
     Tests --> TestsConftest["conftest.py"]
     Tests --> TestsRunTests["run_tests.py"]
     Tests --> TestsRunProcessingQueueTests["run_processing_queue_tests.py"]
+    Tests --> TestsRunAudioExtractorTests["run_audio_extractor_tests.py"]
     Tests --> TestsData["data/"]
     Tests --> TestsFixtures["fixtures/"]
     Tests --> TestsIntegration["integration/"]
@@ -331,6 +343,7 @@ graph TD
     TestsIntegration --> TestsIntegrationProcessingQueue["test_processing_queue.py"]
     TestsIntegration --> TestsIntegrationProcessingQueueSimplified["test_processing_queue_simplified.py"]
     TestsIntegration --> TestsIntegrationPersistence["test_persistence.py"]
+    TestsIntegration --> TestsIntegrationAudioExtraction["test_audio_extraction_integration.py"]
 
     %% Unit Tests
     TestsUnit --> TestsUnitInit["__init__.py"]
@@ -350,6 +363,8 @@ graph TD
     TestsUnit --> TestsUnitProcessingQueueRecovery["test_processing_queue_recovery.py"]
     TestsUnit --> TestsUnitProcessingQueuePriority["test_processing_queue_priority.py"]
     TestsUnit --> TestsUnitProcessCommand["test_process_command.py"]
+    TestsUnit --> TestsUnitAudioExtractor["test_audio_extractor.py"]
+    TestsUnit --> TestsUnitSyntheticVideos["test_synthetic_videos.py"]
 
     %% Test Fixtures
     TestsFixtures --> TestsFixturesConfig["test_config.json"]
@@ -559,4 +574,14 @@ Key functional components:
   - ✅ Task 7: Create unit tests for queue management commands
   - ✅ Task 8: Update project documentation
 
-Last Updated: 2025-05-16
+- **Epic 21**: Audio extraction tests implementation ✅ (2025-05-18)
+  - ✅ Task 1: Create comprehensive unit tests for audio extraction
+  - ✅ Task 2: Implement tests for video file validation
+  - ✅ Task 3: Implement tests for audio extraction with different parameters
+  - ✅ Task 4: Implement tests for extraction from synthetic videos
+  - ✅ Task 5: Implement integration tests with real file handling
+  - ✅ Task 6: Create test runner script for audio extractor tests
+  - ✅ Task 7: Create comprehensive documentation for audio extraction component
+  - ✅ Task 8: Update project structure and implementation plan
+
+Last Updated: 2025-05-18
