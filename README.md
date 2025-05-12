@@ -15,7 +15,7 @@ Meet2Obsidian automatically processes meeting recordings, converts them to text,
 ## ✨ Key Features
 
 - **Automated Recording Processing**: Monitors for new MP4 files in your designated meetings directory
-- **Audio Extraction**: Converts videos to audio format (M4A) while preserving original filenames
+- **Enhanced Audio Extraction**: Extracts audio from videos in various formats (WAV, MP3, M4A) with quality profiles optimized for speech
 - **Speech-to-Text Conversion**: Transcribes speech using Rev.ai's powerful API
 - **Structured Notes**: Automatically creates Obsidian notes with sections for:
   - Meeting Information
@@ -31,9 +31,11 @@ Meet2Obsidian automatically processes meeting recordings, converts them to text,
 ## 🔧 How It Works
 
 1. The utility monitors changes in your `/Documents/meet_records/` directory (or custom path)
-2. When a new MP4 file is detected:
-   - Audio is extracted and saved as an M4A file
-   - Original MP4 file is removed to save space
+2. When a new video file is detected:
+   - File is validated to ensure it's a proper video file
+   - Audio is extracted and saved in your preferred format (WAV, MP3, M4A)
+   - Quality profile optimized for speech is applied for better transcription
+   - Original video file is removed to save space (optional)
 3. Audio file is sent to Rev.ai service for transcription
 4. Upon receiving the transcription:
    - Creates "Meeting Records" directory in your Obsidian vault (if not exists)
@@ -175,15 +177,26 @@ Meet2Obsidian offers several customization options:
   - Robust error handling with automatic retries
   - State persistence for recovery after application restart
   - Event-based callbacks for processing status updates
-- [ ] Support for additional video/audio formats
+- [x] Support for additional audio formats (WAV, MP3, M4A, OGG) with quality profiles
+- [x] Robust audio extraction system with advanced error handling and metadata support
+- [x] File monitoring implementation with validation for automatic video processing
 - [ ] Integration with alternative transcription services
-- [ ] File monitoring implementation for automatic video processing
 - [ ] Cross-linking between notes based on content context using AI relevance agent
   - Dedicated AI agent evaluates existing vault notes for contextual relevance
   - Creates bidirectional links with related content
   - Builds semantic connections across your knowledge base
 
 ## 🔍 Technical Features
+
+### Audio Extraction System
+Sophisticated audio extraction capabilities with extensive feature set:
+- Support for multiple audio formats (WAV, MP3, M4A, OGG)
+- Quality profiles optimized for different use cases (voice, low, medium, high)
+- FFmpeg integration for reliable media processing
+- Metadata extraction and caching for performance optimization
+- Handling of videos without audio tracks by generating silent audio
+- Robust validation and error detection for corrupted videos
+- Full control over audio parameters (bitrate, sample rate, channels)
 
 ### Processing Queue System
 Advanced file processing queue with sophisticated features:
@@ -194,6 +207,14 @@ Advanced file processing queue with sophisticated features:
 - Callback system for processing status monitoring and event handling
 - Process cancellation and waiting capabilities
 - Comprehensive statistics and state tracking
+
+### File Monitoring System
+Automated file detection and processing with:
+- Directory watching for new video files
+- File validation to ensure proper video format before processing
+- Filter capability to match specific file patterns
+- Integration with the processing queue
+- Maintenance of processed file history
 
 ### Local Processing
 Audio extraction and file management happen locally, minimizing bandwidth usage.

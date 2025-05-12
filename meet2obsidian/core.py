@@ -298,39 +298,60 @@ class ApplicationManager:
                     processing_dir = os.path.join(app_support_dir, "processing")
                     os.makedirs(processing_dir, exist_ok=True)
                     
-                    # Create processor function
-                    def process_file(file_path, metadata):
-                        """Process a video file."""
-                        try:
-                            # This is a placeholder for actual processing.
-                            # In a real implementation, this would trigger audio extraction,
-                            # transcription, and note generation.
-                            
-                            # Generate a job ID
-                            job_id = f"job_{os.path.basename(file_path)}_{int(time.time())}"
-                            
-                            # Add job to active jobs for backwards compatibility
-                            job_info = {
-                                "file": file_path,
-                                "stage": "processing",
-                                "progress": "50%"
-                            }
-                            self.add_job(job_id, job_info)
-                            
-                            # Add a small delay to simulate processing
-                            time.sleep(1)
-                            
-                            # Mark job as completed for backwards compatibility
-                            self.complete_job(job_id, success=True)
-                            
-                            self.logger.info(f"Processed file: {file_path}")
-                            return True
-                        except Exception as e:
-                            self.logger.error(f"Error processing file {file_path}: {str(e)}")
-                            return False
-                    
-                    # Create processor
-                    processor = FileProcessor(process_file)
+                    # Create audio directory for extracted audio files
+                    audio_dir = self.config_manager.get_value("paths.audio_directory",
+                                                             default=os.path.join(app_support_dir, "audio"))
+                    os.makedirs(audio_dir, exist_ok=True)
+
+                    # Try to create AudioExtractionProcessor
+                    try:
+                        from meet2obsidian.processing.audio_processor import AudioExtractionProcessor
+
+                        # Create audio extraction processor
+                        self.audio_processor = AudioExtractionProcessor(
+                            output_dir=audio_dir,
+                            logger=self.logger.getChild("audio_processor")
+                        )
+
+                        # Use audio processor as main processor
+                        processor = self.audio_processor
+                        self.logger.info("Audio extraction processor initialized successfully")
+                    except ImportError:
+                        self.logger.warning("Audio extraction processor not available, using default processor")
+
+                        # Create fallback processor function if audio extraction is not available
+                        def process_file(file_path, metadata):
+                            """Process a video file."""
+                            try:
+                                # This is a placeholder for actual processing.
+                                # In a real implementation, this would trigger audio extraction,
+                                # transcription, and note generation.
+
+                                # Generate a job ID
+                                job_id = f"job_{os.path.basename(file_path)}_{int(time.time())}"
+
+                                # Add job to active jobs for backwards compatibility
+                                job_info = {
+                                    "file": file_path,
+                                    "stage": "processing",
+                                    "progress": "50%"
+                                }
+                                self.add_job(job_id, job_info)
+
+                                # Add a small delay to simulate processing
+                                time.sleep(1)
+
+                                # Mark job as completed for backwards compatibility
+                                self.complete_job(job_id, success=True)
+
+                                self.logger.info(f"Processed file: {file_path}")
+                                return True
+                            except Exception as e:
+                                self.logger.error(f"Error processing file {file_path}: {str(e)}")
+                                return False
+
+                        # Create processor
+                        processor = FileProcessor(process_file)
                     
                     # Create queue
                     persistence_file = os.path.join(processing_dir, "queue_state.json")
@@ -374,6 +395,12 @@ class ApplicationManager:
 
                         # Load previously processed files if available
                         self.file_monitor.load_processed_files(processed_files_path)
+
+                        # If audio processor is available, use it for quick video validation
+                        if hasattr(self, 'audio_processor') and self.audio_processor:
+                            # Set quick validation function
+                            self.file_monitor.set_validation_function(self.audio_processor.quick_validate)
+                            self.logger.info("Using AudioExtractor for quick video validation")
 
                         # Register callback function for new files
                         self.file_monitor.register_file_callback(self._handle_new_file)

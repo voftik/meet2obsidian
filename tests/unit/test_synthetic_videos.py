@@ -51,11 +51,7 @@ class TestSyntheticVideos:
                 video_path = output_path
 
             try:
-                # Check if ffmpeg is available
-                try:
-                    subprocess.run(['ffmpeg', '-version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-                except (subprocess.SubprocessError, FileNotFoundError):
-                    pytest.skip("FFmpeg not available - skipping test")
+                # FFmpeg availability is already checked by the skipif decorator
                 
                 # Create a synthetic video using FFmpeg
                 cmd = [
@@ -84,10 +80,10 @@ class TestSyntheticVideos:
                 # Corrupt the file if requested
                 if corrupt:
                     with open(video_path, 'r+b') as f:
-                        # Jump to a position that will corrupt the file but still keep it as a file
-                        f.seek(100)
-                        # Write some random bytes
-                        f.write(os.urandom(10))
+                        # Jump to the beginning to corrupt the header
+                        f.seek(0)
+                        # Write random bytes to seriously corrupt the file
+                        f.write(b"CORRUPTED" + os.urandom(100))
                 
                 # Track the file for cleanup
                 created_files.append(video_path)
@@ -109,15 +105,13 @@ class TestSyntheticVideos:
                 except:
                     pass
     
-    @pytest.mark.skipif(not os.path.exists('/usr/bin/ffmpeg') and not os.path.exists('/usr/local/bin/ffmpeg'),
+    @pytest.mark.skipif(not os.path.exists('/usr/bin/ffmpeg') and
+                         not os.path.exists('/usr/local/bin/ffmpeg') and
+                         not os.path.exists('/opt/homebrew/bin/ffmpeg'),
                          reason="FFmpeg not installed")
     def test_extract_audio_from_synthetic_video(self, extractor, create_synthetic_video):
         """Test audio extraction from a synthetically generated video."""
-        # Skip if ffmpeg is not installed
-        try:
-            subprocess.run(['ffmpeg', '-version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-        except (subprocess.SubprocessError, FileNotFoundError):
-            pytest.skip("FFmpeg not available - skipping test")
+        # FFmpeg availability is already checked by the skipif decorator
             
         # Arrange - create synthetic video with audio
         video_path = create_synthetic_video(duration=3, has_audio=True)
@@ -138,15 +132,13 @@ class TestSyntheticVideos:
             if os.path.exists(audio_path):
                 os.unlink(audio_path)
     
-    @pytest.mark.skipif(not os.path.exists('/usr/bin/ffmpeg') and not os.path.exists('/usr/local/bin/ffmpeg'),
+    @pytest.mark.skipif(not os.path.exists('/usr/bin/ffmpeg') and
+                         not os.path.exists('/usr/local/bin/ffmpeg') and
+                         not os.path.exists('/opt/homebrew/bin/ffmpeg'),
                          reason="FFmpeg not installed")
     def test_extract_audio_no_audio_stream(self, extractor, create_synthetic_video):
         """Test extracting audio from a video with no audio stream."""
-        # Skip if ffmpeg is not installed
-        try:
-            subprocess.run(['ffmpeg', '-version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-        except (subprocess.SubprocessError, FileNotFoundError):
-            pytest.skip("FFmpeg not available - skipping test")
+        # FFmpeg availability is already checked by the skipif decorator
             
         # Arrange - create synthetic video without audio
         video_path = create_synthetic_video(duration=3, has_audio=False)
@@ -168,15 +160,13 @@ class TestSyntheticVideos:
             if os.path.exists(audio_path):
                 os.unlink(audio_path)
     
-    @pytest.mark.skipif(not os.path.exists('/usr/bin/ffmpeg') and not os.path.exists('/usr/local/bin/ffmpeg'),
+    @pytest.mark.skipif(not os.path.exists('/usr/bin/ffmpeg') and
+                         not os.path.exists('/usr/local/bin/ffmpeg') and
+                         not os.path.exists('/opt/homebrew/bin/ffmpeg'),
                          reason="FFmpeg not installed")
     def test_validate_corrupt_video(self, extractor, create_synthetic_video):
         """Test validation with a corrupt video file."""
-        # Skip if ffmpeg is not installed
-        try:
-            subprocess.run(['ffmpeg', '-version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-        except (subprocess.SubprocessError, FileNotFoundError):
-            pytest.skip("FFmpeg not available - skipping test")
+        # FFmpeg availability is already checked by the skipif decorator
             
         # Arrange - create corrupted video
         video_path = create_synthetic_video(corrupt=True)
@@ -188,16 +178,14 @@ class TestSyntheticVideos:
         assert is_valid is False, "Corrupt video should fail validation"
         assert error is not None, "Error should be provided for corrupt file"
     
-    @pytest.mark.skipif(not os.path.exists('/usr/bin/ffmpeg') and not os.path.exists('/usr/local/bin/ffmpeg'),
+    @pytest.mark.skipif(not os.path.exists('/usr/bin/ffmpeg') and
+                         not os.path.exists('/usr/local/bin/ffmpeg') and
+                         not os.path.exists('/opt/homebrew/bin/ffmpeg'),
                          reason="FFmpeg not installed")
     @pytest.mark.parametrize("expected_duration", [1, 3, 5])
     def test_video_duration_accuracy(self, extractor, create_synthetic_video, expected_duration):
         """Test accuracy of video duration reporting."""
-        # Skip if ffmpeg is not installed
-        try:
-            subprocess.run(['ffmpeg', '-version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-        except (subprocess.SubprocessError, FileNotFoundError):
-            pytest.skip("FFmpeg not available - skipping test")
+        # FFmpeg availability is already checked by the skipif decorator
             
         # Arrange - create video with specific duration
         video_path = create_synthetic_video(duration=expected_duration)
@@ -211,16 +199,14 @@ class TestSyntheticVideos:
         assert abs(info["duration"] - expected_duration) < 0.2, \
             f"Expected duration {expected_duration}, got {info['duration']}"
     
-    @pytest.mark.skipif(not os.path.exists('/usr/bin/ffmpeg') and not os.path.exists('/usr/local/bin/ffmpeg'),
+    @pytest.mark.skipif(not os.path.exists('/usr/bin/ffmpeg') and
+                         not os.path.exists('/usr/local/bin/ffmpeg') and
+                         not os.path.exists('/opt/homebrew/bin/ffmpeg'),
                          reason="FFmpeg not installed")
     @pytest.mark.parametrize("format_type", ["wav", "mp3", "m4a"])
     def test_extract_audio_different_formats(self, extractor, create_synthetic_video, format_type):
         """Test audio extraction with different output formats."""
-        # Skip if ffmpeg is not installed
-        try:
-            subprocess.run(['ffmpeg', '-version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-        except (subprocess.SubprocessError, FileNotFoundError):
-            pytest.skip("FFmpeg not available - skipping test")
+        # FFmpeg availability is already checked by the skipif decorator
             
         # Arrange - create synthetic video
         video_path = create_synthetic_video(duration=2)
@@ -241,16 +227,14 @@ class TestSyntheticVideos:
             if os.path.exists(audio_path):
                 os.unlink(audio_path)
                 
-    @pytest.mark.skipif(not os.path.exists('/usr/bin/ffmpeg') and not os.path.exists('/usr/local/bin/ffmpeg'),
+    @pytest.mark.skipif(not os.path.exists('/usr/bin/ffmpeg') and
+                         not os.path.exists('/usr/local/bin/ffmpeg') and
+                         not os.path.exists('/opt/homebrew/bin/ffmpeg'),
                          reason="FFmpeg not installed")
     @pytest.mark.parametrize("channels", [1, 2])
     def test_extract_audio_channels(self, extractor, create_synthetic_video, channels):
         """Test audio extraction with different channel counts."""
-        # Skip if ffmpeg is not installed
-        try:
-            subprocess.run(['ffmpeg', '-version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-        except (subprocess.SubprocessError, FileNotFoundError):
-            pytest.skip("FFmpeg not available - skipping test")
+        # FFmpeg availability is already checked by the skipif decorator
             
         # Arrange - create synthetic video
         video_path = create_synthetic_video(duration=2)

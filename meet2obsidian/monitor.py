@@ -63,6 +63,9 @@ class FileMonitor:
         # Callback to notify when new files are found
         self._file_callback = None
 
+        # Validation function to check if a file is a valid video
+        self._validation_function = None
+
         # The FileWatcher instance
         self._file_watcher = None
 
@@ -225,6 +228,16 @@ class FileMonitor:
         """
         self._file_callback = callback
 
+    def set_validation_function(self, validation_func: Callable[[str], bool]) -> None:
+        """
+        Set a function to validate files before processing.
+
+        Args:
+            validation_func: Function that takes a file path and returns True if the file is valid
+        """
+        self._validation_function = validation_func
+        self.logger.info("Validation function set for file monitor")
+
     def get_status(self) -> Dict[str, Any]:
         """
         Get status information about the file monitor.
@@ -324,6 +337,19 @@ class FileMonitor:
             if not os.path.exists(file_path):
                 self.logger.warning(f"File no longer exists, skipping: {os.path.basename(file_path)}")
                 return False
+
+            # If validation function is set, check if file is valid
+            if self._validation_function:
+                try:
+                    is_valid = self._validation_function(file_path)
+                    if not is_valid:
+                        self.logger.warning(f"File failed validation, skipping: {os.path.basename(file_path)}")
+                        # Still mark as processed to avoid repeated checks
+                        self._add_to_processed_files(file_path)
+                        return False
+                except Exception as e:
+                    self.logger.error(f"Error in validation function: {str(e)}")
+                    # Continue processing in case of validation error
 
             # Call the callback if registered
             if self._file_callback:

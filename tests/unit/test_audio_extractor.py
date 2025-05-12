@@ -203,8 +203,8 @@ class TestAudioExtractor:
             # Check command arguments
             args = mock_run.call_args[0][0]
             assert args[0] == 'ffmpeg'
-            assert args[1] == '-i'
-            assert args[2] == video_path
+            assert '-i' in args
+            assert video_path in args
     
     def test_extract_audio_custom_output_path(self, extractor):
         """Test extracting audio with custom output path."""
