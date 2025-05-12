@@ -9,10 +9,11 @@ Meet2Obsidian is a tool designed to automatically convert video conference recor
 The system is structured using a modular architecture that consists of:
 
 1. **File Monitoring Subsystem**: Watches directories for new video files
-2. **Audio Extraction Subsystem**: Extracts audio from video files 
-3. **Processing Queue System**: Manages the workflow of file processing
-4. **Note Generation**: Creates structured Markdown notes from transcriptions
-5. **Obsidian Integration**: Provides templates and utilities for Obsidian compatibility
+2. **File Management System**: Provides robust file operations with error handling
+3. **Audio Extraction Subsystem**: Extracts audio from video files
+4. **Processing Queue System**: Manages the workflow of file processing
+5. **Note Generation**: Creates structured Markdown notes from transcriptions
+6. **Obsidian Integration**: Provides templates and utilities for Obsidian compatibility
 
 ### Project Directory Structure
 
@@ -38,6 +39,7 @@ meet2obsidian/
   │   │   └── processor.py        # Base processor interface
   │   ├── utils/            # Utility modules
   │   │   ├── __init__.py
+  │   │   ├── file_manager.py # File management utilities
   │   │   ├── logging.py    # Logging utilities
   │   │   ├── security.py   # Security utilities
   │   │   └── status.py     # Status reporting
@@ -55,8 +57,11 @@ meet2obsidian/
   │   ├── __init__.py
   │   ├── data/             # Test data
   │   ├── integration/      # Integration tests
+  │   │   ├── test_audio_extraction_integration.py  # Audio extraction integration tests
+  │   │   └── test_file_manager_integration.py      # File manager integration tests
   │   └── unit/             # Unit tests
   │       ├── test_audio_extractor.py  # Tests for audio extraction
+  │       ├── test_file_manager.py     # Tests for file management
   │       ├── test_synthetic_videos.py # Tests with synthetic video files
   │       └── [other test files]
   ├── LICENSE
@@ -65,6 +70,71 @@ meet2obsidian/
   ├── requirements.txt     # Dependencies
   └── setup.py             # Package installation
 ```
+
+## File Management System
+
+The file management component provides robust and reliable file operations with comprehensive error handling. It ensures that all file operations across the application are performed safely, with proper error recovery and logging.
+
+### File Management Process
+
+The FileManager utility handles all critical file operations:
+
+1. **Safe Deletion**: Removes files with proper error handling
+2. **Secure Deletion**: Multi-pass overwriting for sensitive files
+3. **Directory Operations**: Creates, moves, and deletes directories
+4. **File Movement**: Safely relocates files with fallbacks
+5. **Permission Management**: Checks and sets file permissions
+6. **Error Recovery**: Handles common file system errors
+
+### Key Component
+
+#### FileManager (`meet2obsidian/utils/file_manager.py`)
+
+The `FileManager` class provides core file management functionality:
+
+- **Safe File Operations**: All operations include comprehensive error handling
+- **Status Reporting**: Operations return success/error status with detailed messages
+- **Permission Management**: Granular control of file access permissions
+- **Recovery Mechanisms**: Automatic retries for temporary errors
+- **Cross-Device Support**: Special handling for operations across filesystems
+
+```python
+# Key methods of the FileManager class:
+- delete_file(file_path)                # Safely delete a file
+- secure_delete_file(file_path, passes) # Securely delete with overwriting
+- move_file(source, target, ...)        # Move file with error handling
+- copy_file(source, target, ...)        # Copy file with metadata preservation
+- check_permission(path, perm_type)     # Check file permissions
+- set_permissions(path, read, write)    # Modify file permissions
+```
+
+### Technical Implementation Details
+
+#### Error Handling Strategy
+
+The system implements a multi-layered error handling approach:
+
+- **Operation Status**: All methods return success/error status
+- **Detailed Messages**: Error messages provide context for debugging
+- **Error Tracking**: Last error and error code are stored for later retrieval
+- **Logging**: Errors are logged with detailed information
+- **Recovery**: Automatic retry for transient errors (with configurable attempts)
+
+#### Security Features
+
+Special attention is given to file security:
+
+- **Secure Deletion**: Multi-pass overwriting with zero, ones, and random data
+- **Permission Enforcement**: Strict checking of access rights
+- **Path Validation**: Verification of path safety before operations
+
+#### Platform Compatibility
+
+The implementation handles platform-specific differences:
+
+- **Cross-Platform Testing**: Tests accommodate different OS behaviors
+- **Permission Mapping**: Platform-appropriate permission handling
+- **Error Code Translation**: Standardized error reporting across platforms
 
 ## Audio Extraction System
 
@@ -202,6 +272,8 @@ The audio extraction system integrates with several other components:
 
 ## Testing
 
+### Audio Extraction Testing
+
 The audio extraction system has comprehensive test coverage:
 
 - **Unit Tests**: Test individual methods and functionality
@@ -217,14 +289,43 @@ The audio extraction system has comprehensive test coverage:
   - Error handling tests for corrupt or invalid files
   - Metadata tests for information extraction
 
+### File Management Testing
+
+The file management system has extensive test coverage:
+
+- **Unit Tests**: Test individual file operations and error scenarios
+  - `test_file_manager.py`: Tests all file operations and error handling
+
+- **Integration Tests**: Test end-to-end workflows
+  - `test_file_manager_integration.py`: Tests complete workflows with the real file system
+
+- **Test Types**:
+  - File operation tests (delete, move, copy)
+  - Permission management tests
+  - Error handling tests for various scenarios
+  - Recovery tests for transient errors
+
 ## Dependencies
+
+### Audio Extraction Dependencies
 
 The audio extraction system relies on external dependencies:
 
 - **FFmpeg**: For video processing and audio extraction
 - **FFprobe**: For media file analysis and metadata extraction
 
+### File Management Dependencies
+
+The file management system primarily uses Python standard library modules:
+
+- **os**: For basic file operations
+- **shutil**: For high-level file operations
+- **stat**: For permission handling
+- **errno**: For error code standardization
+
 ## Future Enhancements
+
+### Audio Extraction Enhancements
 
 Potential enhancements for the audio extraction system:
 
@@ -233,3 +334,13 @@ Potential enhancements for the audio extraction system:
 3. **Multi-track support**: Handling videos with multiple audio tracks
 4. **Cloud processing**: Offloading processing to cloud services
 5. **Progress reporting**: Real-time progress updates during extraction
+
+### File Management Enhancements
+
+Potential enhancements for the file management system:
+
+1. **File ownership management**: Change file ownership and group
+2. **Extended attribute support**: Read/write extended file attributes
+3. **Checksumming**: File integrity verification
+4. **File locking**: Explicit file locking for concurrent access
+5. **Asynchronous operations**: Non-blocking file operations
