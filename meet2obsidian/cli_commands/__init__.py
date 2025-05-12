@@ -8,3 +8,7 @@
 # Импорт всех модулей команд для регистрации
 from . import logs_command
 from . import apikeys_command
+from . import service_command
+from . import status_command
+from . import config_command
+from . import completion

@@ -67,7 +67,13 @@ meet2obsidian/
 │   ├── cache.py
 │   ├── cli.py
 │   ├── cli_commands/
-│   │   └── logs_command.py
+│   │   ├── __init__.py
+│   │   ├── apikeys_command.py
+│   │   ├── completion.py
+│   │   ├── config_command.py
+│   │   ├── logs_command.py
+│   │   ├── service_command.py
+│   │   └── status_command.py
 │   ├── config.py
 │   ├── core.py
 │   ├── monitor.py
@@ -189,7 +195,13 @@ graph TD
     Meet2Obsidian --> Meet2ObsidianCache["cache.py"]
 
     %% CLI Commands
+    Meet2ObsidianCLICommands --> Meet2ObsidianCLICommandsInit["__init__.py"]
     Meet2ObsidianCLICommands --> Meet2ObsidianCLICommandsLogs["logs_command.py"]
+    Meet2ObsidianCLICommands --> Meet2ObsidianCLICommandsAPIKeys["apikeys_command.py"]
+    Meet2ObsidianCLICommands --> Meet2ObsidianCLICommandsService["service_command.py"]
+    Meet2ObsidianCLICommands --> Meet2ObsidianCLICommandsStatus["status_command.py"]
+    Meet2ObsidianCLICommands --> Meet2ObsidianCLICommandsConfig["config_command.py"]
+    Meet2ObsidianCLICommands --> Meet2ObsidianCLICommandsCompletion["completion.py"]
 
     %% API Package
     Meet2ObsidianAPI --> Meet2ObsidianAPIInit["__init__.py"]
@@ -276,8 +288,9 @@ The project is in active development. Current status:
   - Configuration module (`config.py`) implementation completed ✅
   - Logging module fully implemented with structured logging and rotation ✅
   - Security module for API key management fully implemented ✅
-  - Basic structure is set up for other modules
-  - CLI commands system established for logs and API key management ✅
+  - Process monitoring and control via ApplicationManager in core.py ✅ 
+  - Complete CLI interface with command groups ✅
+  - CLI commands for service management, status reporting, and configuration management ✅
 
 - **Documentation**:
   - Comprehensive documentation for completed components
@@ -304,9 +317,15 @@ Key functional components:
 - `utils/security.py`: KeychainManager for securely storing API keys in macOS Keychain ✅
 - `config.py`: Configuration management system with JSON support and validation ✅
 - `utils/logging.py`: Structured logging system with JSON format and rotation ✅
-- `cli_commands/logs_command.py`: CLI commands for log management ✅
-- `cli_commands/apikeys_command.py`: CLI commands for API key management ✅
-- `scripts/setup_api_keys.py`: Script for setting up and testing API keys ✅
+- `core.py`: ApplicationManager class for process monitoring and control ✅
+- `cli.py`: Main CLI entry point with modular command structure ✅
+- **CLI Command Modules**:
+  - `cli_commands/service_command.py`: Service start/stop commands with autostart support ✅
+  - `cli_commands/status_command.py`: Status reporting in various formats ✅
+  - `cli_commands/config_command.py`: Configuration management (show, set, reset, import, export) ✅
+  - `cli_commands/logs_command.py`: Log viewing and management ✅
+  - `cli_commands/apikeys_command.py`: API key management ✅
+  - `cli_commands/completion.py`: Shell completion for CLI commands ✅
 
 ### Completed Epics:
 - **Epic 6**: Configuration module implementation ✅ (2025-05-12)
@@ -334,9 +353,21 @@ Key functional components:
   - ✅ Task 5: Create CLI commands for API key management
   - ✅ Task 6: Update API key setup tools
 - **Epic 11**: Tests for CLI interface ✅ (2025-05-12)
-  - ✅ Task 1: Tests for start/stop commands
+  - ✅ Task 1: Tests for service start/stop commands
   - ✅ Task 2: Tests for status command
-  - ✅ Task 3: Tests for config command (prepared for future implementation)
-  - ✅ Task 4: Tests for argument processing
+  - ✅ Task 3: Tests for config command
+  - ✅ Task 4: Tests for logs command
+  - ✅ Task 5: Tests for API keys command
+  - ✅ Task 6: Tests for CLI completion
+  - ✅ Task 7: Tests for argument processing
+- **Epic 12**: Implementation of CLI interface ✅ (2025-05-12)
+  - ✅ Task 1: Implement modular CLI structure
+  - ✅ Task 2: Create service management commands
+  - ✅ Task 3: Create status reporting commands
+  - ✅ Task 4: Create configuration management commands
+  - ✅ Task 5: Implement ApplicationManager in core.py
+  - ✅ Task 6: Add shell completion support
+  - ✅ Task 7: Add detailed error handling
+  - ✅ Task 8: Enhance CLI with rich formatting
 
-Last Updated: 2025-05-13
+Last Updated: 2025-05-12

@@ -1,37 +1,74 @@
 # Команды CLI
 
-Meet2Obsidian предоставляет интерфейс командной строки (CLI) для удобного использования различных функций программы.
+Meet2Obsidian предоставляет интуитивный интерфейс командной строки (CLI) для удобного управления всеми функциями программы.
 
 ## Основные команды
 
-### Запуск приложения
+### Команды управления сервисом
+
+Управление основными функциями Meet2Obsidian осуществляется через группу команд `service`:
 
 ```bash
-# Запуск с настройками по умолчанию
-meet2obsidian run
+# Запуск сервиса Meet2Obsidian
+meet2obsidian service start
 
-# Запуск с указанием конфигурационного файла
-meet2obsidian run --config /path/to/config.yaml
+# Запуск с настройкой автозапуска
+meet2obsidian service start --autostart
+
+# Остановка сервиса
+meet2obsidian service stop
+
+# Принудительная остановка сервиса
+meet2obsidian service stop --force
 ```
 
-### Обработка файла
+### Проверка статуса
 
 ```bash
-# Обработка одного файла
-meet2obsidian process /path/to/meeting.mp4
+# Базовая проверка статуса
+meet2obsidian status
 
-# Обработка файла с указанием выходной директории
-meet2obsidian process /path/to/meeting.mp4 --output /path/to/notes
+# Подробный статус
+meet2obsidian status --detailed
+
+# Вывод в формате JSON
+meet2obsidian status --format json
+
+# Вывод в текстовом формате
+meet2obsidian status --format text
 ```
 
-### Настройка
+## Команды управления конфигурацией
+
+Meet2Obsidian предоставляет гибкие возможности для управления конфигурацией.
+
+### Просмотр и изменение конфигурации
 
 ```bash
-# Инициализация конфигурационного файла
-meet2obsidian config init
+# Показать текущую конфигурацию
+meet2obsidian config show
 
-# Настройка API ключей
-meet2obsidian config set-api-keys
+# Показать конфигурацию в формате JSON
+meet2obsidian config show --format json
+
+# Установить значение параметра конфигурации
+meet2obsidian config set paths.video_directory /path/to/videos
+
+# Сбросить конфигурацию к значениям по умолчанию
+meet2obsidian config reset
+```
+
+### Импорт и экспорт конфигурации
+
+```bash
+# Экспортировать конфигурацию в файл
+meet2obsidian config export /path/to/config.yaml
+
+# Экспортировать в формате JSON
+meet2obsidian config export /path/to/config.json --format json
+
+# Импортировать конфигурацию из файла
+meet2obsidian config import /path/to/config.yaml
 ```
 
 ## Команды для работы с логами
@@ -52,62 +89,149 @@ meet2obsidian logs show --level error
 
 # Показать логи в формате JSON
 meet2obsidian logs show --format json
+
+# Показать логи из нестандартного файла
+meet2obsidian logs show --log-file /path/to/custom.log
 ```
 
 ### Очистка логов
 
 ```bash
-# Очистить основной файл логов
+# Очистить файл логов
 meet2obsidian logs clear
-
-# Очистить все ротированные файлы логов
-meet2obsidian logs clear --all
 ```
 
-### Создание диагностической информации
+## Команды управления API-ключами
+
+Meet2Obsidian предоставляет команды для управления API-ключами, используемыми для доступа к внешним сервисам.
+
+### Настройка API-ключей
 
 ```bash
-# Создать диагностическую запись в логах
-meet2obsidian logs diagnostic
+# Настройка всех API-ключей одной командой (с интерактивным вводом)
+meet2obsidian apikeys setup
 
-# Создать полный отчет о системе
-meet2obsidian logs diagnostic --full
+# Настройка всех API-ключей с передачей значений через опции
+meet2obsidian apikeys setup --rev-ai YOUR_REV_AI_KEY --claude YOUR_CLAUDE_KEY
+
+# Установка отдельного API-ключа (с интерактивным вводом)
+meet2obsidian apikeys set rev_ai
+
+# Установка отдельного API-ключа (с указанием значения)
+meet2obsidian apikeys set rev_ai --value YOUR_REV_AI_KEY
 ```
 
-## Мониторинг
+### Просмотр информации об API-ключах
 
 ```bash
-# Запустить мониторинг директорий
-meet2obsidian monitor start
+# Просмотр списка всех API-ключей
+meet2obsidian apikeys list
 
-# Остановить мониторинг
-meet2obsidian monitor stop
+# Просмотр списка в формате JSON
+meet2obsidian apikeys list --format json
 
-# Показать статус мониторинга
-meet2obsidian monitor status
+# Получение API-ключа (маскированное значение)
+meet2obsidian apikeys get rev_ai
+
+# Получение полного значения API-ключа
+meet2obsidian apikeys get rev_ai --show
 ```
 
-## Опции логирования
-
-Все команды поддерживают следующие опции логирования:
+### Удаление API-ключей
 
 ```bash
-# Изменить уровень логирования
-meet2obsidian --log-level debug run
+# Удаление API-ключа (с запросом подтверждения)
+meet2obsidian apikeys delete test_key
 
-# Указать файл для логов
-meet2obsidian --log-file /path/to/custom.log run
+# Удаление API-ключа без запроса подтверждения
+meet2obsidian apikeys delete test_key --yes
 ```
 
-## Справка
+## Автодополнение команд
 
-Для получения справки по любой команде:
+Meet2Obsidian поддерживает автодополнение команд для различных оболочек.
 
 ```bash
-# Общая справка
+# Вывод скрипта автодополнения для текущей оболочки
+meet2obsidian completion
+
+# Вывод скрипта автодополнения для конкретной оболочки
+meet2obsidian completion --shell bash
+meet2obsidian completion --shell zsh
+meet2obsidian completion --shell fish
+
+# Установка автодополнения в профиль оболочки
+meet2obsidian completion --install
+```
+
+## Глобальные опции
+
+Все команды поддерживают следующие глобальные опции:
+
+```bash
+# Получение справки по любой команде
 meet2obsidian --help
+meet2obsidian service --help
+meet2obsidian service start --help
 
-# Справка по определенной команде
-meet2obsidian logs --help
-meet2obsidian logs show --help
+# Вывод версии программы
+meet2obsidian --version
+
+# Включение подробного режима вывода
+meet2obsidian --verbose status
+
+# Указание пользовательского файла для логов
+meet2obsidian --log-file /path/to/custom.log status
+```
+
+## Форматирование вывода
+
+Meet2Obsidian использует цветное форматирование для улучшения восприятия вывода команд:
+
+- Зеленым цветом выделяются успешные операции ✅
+- Красным цветом выделяются ошибки и предупреждения ❌
+- Голубым цветом выделяются заголовки таблиц и важная информация ℹ️
+- Затененным текстом выделяются метки и менее важная информация
+
+## Примеры использования
+
+### Полный цикл запуска и проверки
+
+```bash
+# Установка API-ключей
+meet2obsidian apikeys setup
+
+# Настройка путей к файлам
+meet2obsidian config set paths.video_directory ~/Videos/GoogleMeet
+meet2obsidian config set paths.obsidian_vault ~/Documents/Obsidian/MainVault
+
+# Запуск сервиса с автозапуском
+meet2obsidian service start --autostart
+
+# Проверка статуса
+meet2obsidian status --detailed
+```
+
+### Диагностика проблем
+
+```bash
+# Проверка статуса API-ключей
+meet2obsidian apikeys list
+
+# Просмотр логов ошибок
+meet2obsidian logs show --level error --count 50
+
+# Проверка конфигурации
+meet2obsidian config show
+```
+
+### Создание резервной копии настроек
+
+```bash
+# Экспорт конфигурации
+meet2obsidian config export ~/backup/meet2obsidian-config.yaml
+
+# Экспорт API-ключей (не рекомендуется для обеспечения безопасности)
+# Вместо этого используйте настройку ключей при необходимости
+meet2obsidian apikeys list --format json > ~/backup/api-keys-status.json
 ```
