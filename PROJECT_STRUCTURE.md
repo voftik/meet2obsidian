@@ -93,6 +93,7 @@ meet2obsidian/
 │   │   └── obsidian.py
 │   └── utils/
 │       ├── __init__.py
+│       ├── file_watcher.py
 │       ├── logging.py
 │       ├── security.py
 │       └── status.py
@@ -111,6 +112,7 @@ meet2obsidian/
 │   ├── epic15_launchagent_tests_report.md
 │   ├── epic16_launchagent_implementation_report.md
 │   ├── epic17_file_monitor_tests_report.md
+│   ├── epic18_file_watcher_implementation_report.md
 │   ├── epic7_logging_tests_report.md
 │   ├── epic8_implementation_report.md
 │   ├── epic9_implementation_report.md
@@ -254,6 +256,7 @@ graph TD
 
     %% Utils Package
     Meet2ObsidianUtils --> Meet2ObsidianUtilsInit["__init__.py"]
+    Meet2ObsidianUtils --> Meet2ObsidianUtilsFileWatcher["file_watcher.py"]
     Meet2ObsidianUtils --> Meet2ObsidianUtilsLogging["logging.py"]
     Meet2ObsidianUtils --> Meet2ObsidianUtilsSecurity["security.py"]
     Meet2ObsidianUtils --> Meet2ObsidianUtilsStatus["status.py"]
@@ -274,6 +277,9 @@ graph TD
     TmpFiles --> TmpEpic15Report["epic15_launchagent_tests_report.md"]
     TmpFiles --> TmpEpic16Report["epic16_launchagent_implementation_report.md"]
     TmpFiles --> TmpEpic17Report["epic17_file_monitor_tests_report.md"]
+    TmpFiles --> TmpEpic18Report["epic18_file_watcher_implementation_report.md"]
+    TmpFiles --> TmpEpic18Details["EPIC18_Implementation_Details.md"]
+    TmpFiles --> TmpFileMonitorTestCompat["FileMonitor_Test_Compatibility_Report.md"]
     TmpFiles --> TmpEpicsSummary["completed_epics_summary.md"]
 
     %% Tests
@@ -477,5 +483,16 @@ Key functional components:
   - ✅ Task 6: Create integration tests for real file system interaction
   - ✅ Task 7: Implement reliability improvements for integration tests
   - ✅ Task 8: Create simplified integration test suite for core functionality
+- **Epic 18**: Watchdog-based file monitoring implementation ✅ (2025-05-12)
+  - ✅ Task 1: Create FileWatcher class based on watchdog library
+  - ✅ Task 2: Implement event-based file detection
+  - ✅ Task 3: Implement file stability tracking
+  - ✅ Task 4: Implement file pattern filtering
+  - ✅ Task 5: Integrate with existing FileMonitor
+  - ✅ Task 6: Add persistence for processed files list
+  - ✅ Task 7: Update ApplicationManager integration
+  - ✅ Task 8: Create comprehensive documentation
+  - ✅ Task 9: Add backward compatibility for existing tests
+  - ✅ Task 10: Create user documentation for improved file monitoring
 
 Last Updated: 2025-05-12

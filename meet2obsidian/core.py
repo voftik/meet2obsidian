@@ -268,18 +268,27 @@ class ApplicationManager:
                     try:
                         from meet2obsidian.monitor import FileMonitor
 
-                        # Get file patterns and poll interval from config if available
+                        # Get file patterns and configuration from config if available
                         patterns = self.config_manager.get_value("processing.file_patterns",
                                                                default=["*.mp4", "*.mov", "*.webm", "*.mkv"])
                         poll_interval = self.config_manager.get_value("processing.poll_interval", default=60)
+                        min_file_age = self.config_manager.get_value("processing.min_file_age_seconds", default=5)
 
-                        # Create and start file monitor
+                        # Get processed files path for persistence
+                        app_support_dir = os.path.dirname(self._pid_file)
+                        processed_files_path = os.path.join(app_support_dir, "processed_files.txt")
+
+                        # Create file monitor
                         self.file_monitor = FileMonitor(
                             directory=os.path.expanduser(video_dir),
                             file_patterns=patterns,
                             poll_interval=poll_interval,
+                            min_file_age_seconds=min_file_age,
                             logger=self.logger
                         )
+
+                        # Load previously processed files if available
+                        self.file_monitor.load_processed_files(processed_files_path)
 
                         # Register callback function for new files
                         self.file_monitor.register_file_callback(self._handle_new_file)
@@ -289,7 +298,7 @@ class ApplicationManager:
                             self.logger.error("Error starting file monitoring")
                             return False
 
-                        self.logger.info(f"File monitoring started for {video_dir}")
+                        self.logger.info(f"File monitoring started for {video_dir} using event-based detection")
                     except ImportError as e:
                         self.logger.warning(f"Could not import FileMonitor: {str(e)}")
                     except Exception as e:
@@ -327,6 +336,17 @@ class ApplicationManager:
             # Stop the FileMonitor if it's running
             if hasattr(self, 'file_monitor') and self.file_monitor:
                 try:
+                    # Save processed files list before stopping
+                    try:
+                        app_support_dir = os.path.dirname(self._pid_file)
+                        processed_files_path = os.path.join(app_support_dir, "processed_files.txt")
+                        if hasattr(self.file_monitor, 'save_processed_files'):
+                            self.file_monitor.save_processed_files(processed_files_path)
+                            self.logger.info("Saved processed files list")
+                    except Exception as e:
+                        self.logger.warning(f"Error saving processed files list: {str(e)}")
+
+                    # Stop monitoring
                     if not self.file_monitor.stop():
                         self.logger.warning("Failed to stop file monitoring")
                     else:

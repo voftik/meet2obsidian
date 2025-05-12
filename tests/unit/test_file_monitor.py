@@ -95,18 +95,26 @@ class TestFileMonitorStartStop:
         mock_exists.return_value = True
         mock_thread_instance = MagicMock()
         mock_thread.return_value = mock_thread_instance
-        
+
         # Mock _scan_directory to avoid actual filesystem operations
         self.monitor._scan_directory = MagicMock(return_value=[])
-        
-        result = self.monitor.start()
-        
-        assert result is True
-        assert self.monitor.is_monitoring is True
-        mock_exists.assert_called_once_with("/test/dir")
-        mock_thread.assert_called_once()
-        mock_thread_instance.start.assert_called_once()
-        self.monitor._scan_directory.assert_called_once()
+
+        # Patch the FileWatcher for this test
+        with patch('meet2obsidian.utils.file_watcher.FileWatcher', autospec=True) as mock_fw:
+            # Configure the FileWatcher mock
+            mock_fw_instance = MagicMock()
+            mock_fw_instance.start.return_value = True
+            mock_fw.return_value = mock_fw_instance
+
+            # Run the test
+            result = self.monitor.start()
+
+            assert result is True
+            assert self.monitor.is_monitoring is True
+            mock_exists.assert_called_once_with("/test/dir")
+            mock_thread.assert_called_once()
+            mock_thread_instance.start.assert_called_once()
+            self.monitor._scan_directory.assert_called_once()
 
     @patch('os.path.exists')
     def test_start_directory_not_exists(self, mock_exists):
@@ -136,17 +144,23 @@ class TestFileMonitorStartStop:
     def test_start_exception(self, mock_thread):
         """Test start with exception."""
         mock_thread.side_effect = Exception("Test error")
-        
+
         # Mock exists to return True
         with patch('os.path.exists', return_value=True):
             # Mock _scan_directory to avoid actual filesystem operations
             self.monitor._scan_directory = MagicMock(return_value=[])
-            
-            result = self.monitor.start()
-            
-            assert result is False
-            assert self.monitor.is_monitoring is False
-            self.logger_mock.error.assert_called_once()
+
+            # Patch the FileWatcher for this test
+            with patch('meet2obsidian.utils.file_watcher.FileWatcher', autospec=True) as mock_fw:
+                # Configure the FileWatcher mock
+                mock_fw_instance = MagicMock()
+                mock_fw.return_value = mock_fw_instance
+
+                result = self.monitor.start()
+
+                assert result is False
+                assert self.monitor.is_monitoring is False
+                self.logger_mock.error.assert_called_once()
 
     def test_stop_success(self):
         """Test successful stop of the monitor."""
