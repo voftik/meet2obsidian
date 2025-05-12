@@ -28,6 +28,8 @@ meet2obsidian/
 │   │   │   ├── API Key Security.md
 │   │   │   ├── CLI Architecture.md
 │   │   │   ├── CLI Testing.md
+│   │   │   ├── FileMonitor.md
+│   │   │   ├── LaunchAgent.md
 │   │   │   └── Logging.md
 │   │   └── setup/
 │   │       ├── API Keys Setup.md
@@ -106,6 +108,9 @@ meet2obsidian/
 │   ├── completed_epics_summary.md
 │   ├── config_implementation_fixes.md
 │   ├── epic12_cli_implementation_report.md
+│   ├── epic15_launchagent_tests_report.md
+│   ├── epic16_launchagent_implementation_report.md
+│   ├── epic17_file_monitor_tests_report.md
 │   ├── epic7_logging_tests_report.md
 │   ├── epic8_implementation_report.md
 │   ├── epic9_implementation_report.md
@@ -120,6 +125,8 @@ meet2obsidian/
     │   ├── __init__.py
     │   ├── test_application_manager_integration.py
     │   ├── test_cli_integration.py
+    │   ├── test_file_monitor_basic.py
+    │   ├── test_file_monitor_integration.py
     │   ├── test_launchagent_integration.py
     │   ├── test_pipeline.py
     │   └── test_security_integration.py
@@ -132,6 +139,7 @@ meet2obsidian/
         ├── test_cli.py
         ├── test_config.py
         ├── test_core.py
+        ├── test_file_monitor.py
         ├── test_launchagent.py
         ├── test_logging.py
         └── test_security.py
@@ -263,6 +271,9 @@ graph TD
     TmpFiles --> TmpEpic8Report["epic8_implementation_report.md"]
     TmpFiles --> TmpEpic9Report["epic9_implementation_report.md"]
     TmpFiles --> TmpEpic12Report["epic12_cli_implementation_report.md"]
+    TmpFiles --> TmpEpic15Report["epic15_launchagent_tests_report.md"]
+    TmpFiles --> TmpEpic16Report["epic16_launchagent_implementation_report.md"]
+    TmpFiles --> TmpEpic17Report["epic17_file_monitor_tests_report.md"]
     TmpFiles --> TmpEpicsSummary["completed_epics_summary.md"]
 
     %% Tests
@@ -281,6 +292,8 @@ graph TD
     TestsIntegration --> TestsIntegrationCLI["test_cli_integration.py"]
     TestsIntegration --> TestsIntegrationAppManager["test_application_manager_integration.py"]
     TestsIntegration --> TestsIntegrationLaunchAgent["test_launchagent_integration.py"]
+    TestsIntegration --> TestsIntegrationFileMonitor["test_file_monitor_integration.py"]
+    TestsIntegration --> TestsIntegrationFileMonitorBasic["test_file_monitor_basic.py"]
 
     %% Unit Tests
     TestsUnit --> TestsUnitInit["__init__.py"]
@@ -293,6 +306,7 @@ graph TD
     TestsUnit --> TestsUnitAppManagerMock["test_application_manager_mock.py"]
     TestsUnit --> TestsUnitAppManagerLaunchAgent["test_application_manager_launchagent.py"]
     TestsUnit --> TestsUnitLaunchAgent["test_launchagent.py"]
+    TestsUnit --> TestsUnitFileMonitor["test_file_monitor.py"]
 
     %% Test Fixtures
     TestsFixtures --> TestsFixturesConfig["test_config.json"]
@@ -454,5 +468,14 @@ Key functional components:
   - ✅ Task 6: Update CLI commands for autostart management
   - ✅ Task 7: Implement FileMonitor for automatic file detection
   - ✅ Task 8: Add thread management and proper file event handling
+- **Epic 17**: Tests for FileMonitor implementation ✅ (2025-05-12)
+  - ✅ Task 1: Create unit tests for FileMonitor functionality
+  - ✅ Task 2: Create tests for detecting new files
+  - ✅ Task 3: Create tests for tracking file stability (copy completion)
+  - ✅ Task 4: Create tests for file pattern filtering
+  - ✅ Task 5: Create tests for file queue processing
+  - ✅ Task 6: Create integration tests for real file system interaction
+  - ✅ Task 7: Implement reliability improvements for integration tests
+  - ✅ Task 8: Create simplified integration test suite for core functionality
 
-Last Updated: 2025-05-13
+Last Updated: 2025-05-12

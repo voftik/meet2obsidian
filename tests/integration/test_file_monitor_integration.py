@@ -5,6 +5,14 @@ These tests verify the real-world behavior of FileMonitor,
 including scanning directories, detecting new files, and
 triggering callbacks when files are added.
 
+The tests cover:
+- File detection and stability monitoring
+- Handling of files of different types and sizes
+- Callback processing
+- Queue management
+- Processing of files in nested directories
+- Handling of concurrent file operations
+
 IMPORTANT: These tests interact with the actual filesystem and are
 marked with 'integration' to allow them to be skipped in CI/CD environments.
 """
@@ -13,7 +21,9 @@ import os
 import time
 import shutil
 import tempfile
+import threading
 import pytest
+import concurrent.futures
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -23,6 +33,9 @@ from meet2obsidian.monitor import FileMonitor
 pytestmark = [
     pytest.mark.integration
 ]
+
+# Constants for tests
+MIN_FILE_AGE_SECONDS = 5  # Minimum age for file stability, matching implementation
 
 
 class TestFileMonitorIntegration:
@@ -191,3 +204,297 @@ class TestFileMonitorIntegration:
 
         # PDF-файл не должен быть в observed_files, так как он не соответствует шаблонам
         assert pdf_file not in self.file_monitor.observed_files
+
+    def test_file_queue_processing(self):
+        """Test that files are processed in correct order."""
+        # In real integration testing, we can't rely on checking the internal queue
+        # as files may be processed and removed from the queue by the time we check.
+        # Instead, let's verify the callbacks are called.
+
+        # Create several test files
+        test_files = []
+        for i in range(5):
+            file_path = os.path.join(self.monitor_dir, f"queue_test_{i}.mp4")
+            with open(file_path, 'w') as f:
+                f.write(f"Test content {i}")
+            test_files.append(file_path)
+
+        # Wait for files to be stable
+        time.sleep(MIN_FILE_AGE_SECONDS + 1)
+
+        # Start the monitor - all files should be processed during first scan
+        self.file_monitor.start()
+
+        # Wait for files to be processed - need longer time for all files
+        time.sleep(10)
+
+        # Stop the monitor
+        self.file_monitor.stop()
+
+        # Verify callbacks were called for each file
+        assert self.mock_callback.call_count == 5
+
+        # Verify each file was passed to the callback
+        call_args_list = [call[0][0] for call in self.mock_callback.call_args_list]
+        for file_path in test_files:
+            assert file_path in call_args_list
+
+    def test_gradual_file_writing(self):
+        """Test detection of a file that is being gradually written to disk."""
+        # Create a file that will be gradually written to
+        file_path = os.path.join(self.monitor_dir, "growing_file.mp4")
+
+        # Start with empty file
+        with open(file_path, 'w') as f:
+            pass
+
+        # Start the monitor
+        self.file_monitor.start()
+
+        # Write content to the file in small chunks to simulate a file being copied
+        content_chunks = ["Part 1 ", "Part 2 ", "Part 3 ", "Part 4 ", "Part 5"]
+
+        for chunk in content_chunks:
+            with open(file_path, 'a') as f:
+                f.write(chunk)
+            # Wait a short time between writes
+            time.sleep(1)
+
+        # Wait for file to be considered stable - need more time as it's being gradually modified
+        time.sleep(MIN_FILE_AGE_SECONDS + 3)
+
+        # Wait for processing - allow more time for polling interval
+        time.sleep(5)
+
+        # Stop the monitor
+        self.file_monitor.stop()
+
+        # Verify the callback was called with the correct file path
+        # During an integration test, the callback may be called more than once if the scan
+        # happens to catch the file at different stages of stability
+        any_callback_for_file = False
+        for call_args in self.mock_callback.call_args_list:
+            if call_args[0][0] == file_path:
+                any_callback_for_file = True
+                break
+
+        assert any_callback_for_file, "File was never processed"
+
+    def test_nested_directories(self):
+        """Test that files in nested directories are not detected (no recursive scan)."""
+        # Create a nested directory structure
+        nested_dir = os.path.join(self.monitor_dir, "nested")
+        os.makedirs(nested_dir, exist_ok=True)
+
+        # Create a file in the root directory
+        root_file = os.path.join(self.monitor_dir, "root_file.mp4")
+        with open(root_file, 'w') as f:
+            f.write("Root file content")
+
+        # Create a file in the nested directory
+        nested_file = os.path.join(nested_dir, "nested_file.mp4")
+        with open(nested_file, 'w') as f:
+            f.write("Nested file content")
+
+        # Wait for files to be stable
+        time.sleep(MIN_FILE_AGE_SECONDS + 1)
+
+        # Start the monitor
+        self.file_monitor.start()
+
+        # Wait for processing - longer for more reliable results
+        time.sleep(8)
+
+        # Stop the monitor
+        self.file_monitor.stop()
+
+        # Verify the root file was detected
+        called_for_root = False
+        for call_args in self.mock_callback.call_args_list:
+            if call_args[0][0] == root_file:
+                called_for_root = True
+                break
+
+        assert called_for_root, "Root file was not detected"
+
+        # Verify nested file was NOT in observed files
+        assert nested_file not in self.file_monitor.observed_files
+
+    def test_large_file_handling(self):
+        """Test handling of a larger file."""
+        # Create a larger file (1MB)
+        large_file = os.path.join(self.monitor_dir, "large_file.mp4")
+
+        # Create 1MB of data (efficient way)
+        with open(large_file, 'wb') as f:
+            f.write(b'\0' * (1024 * 1024))
+
+        # Wait for file to be considered stable - larger files may need more time
+        time.sleep(MIN_FILE_AGE_SECONDS + 2)
+
+        # Start the monitor
+        self.file_monitor.start()
+
+        # Wait for processing - increased to accommodate polling interval
+        time.sleep(8)
+
+        # Stop the monitor
+        self.file_monitor.stop()
+
+        # Verify the large file was detected
+        called_for_large_file = False
+        for call_args in self.mock_callback.call_args_list:
+            if call_args[0][0] == large_file:
+                called_for_large_file = True
+                break
+
+        assert called_for_large_file, "Large file was not detected"
+
+    def test_ignore_dotfiles(self):
+        """Test that hidden files (dotfiles) are not detected by default patterns."""
+        # Create a dotfile that should be ignored
+        dotfile = os.path.join(self.monitor_dir, ".hidden.mp4")
+        with open(dotfile, 'w') as f:
+            f.write("Hidden file content")
+
+        # Create a normal file that should be detected
+        normal_file = os.path.join(self.monitor_dir, "normal.mp4")
+        with open(normal_file, 'w') as f:
+            f.write("Normal file content")
+
+        # Wait for files to be stable
+        time.sleep(MIN_FILE_AGE_SECONDS + 1)
+
+        # Start the monitor
+        self.file_monitor.start()
+
+        # Wait for processing - increase wait time for reliability
+        time.sleep(8)
+
+        # Stop the monitor
+        self.file_monitor.stop()
+
+        # Verify the normal file was detected
+        called_for_normal_file = False
+        for call_args in self.mock_callback.call_args_list:
+            if call_args[0][0] == normal_file:
+                called_for_normal_file = True
+                break
+
+        assert called_for_normal_file, "Normal file was not detected"
+
+        # Check dotfile was not detected
+        for call_args in self.mock_callback.call_args_list:
+            assert call_args[0][0] != dotfile, "Dotfile was incorrectly detected"
+
+        # The dotfile should not be in observed_files
+        assert dotfile not in self.file_monitor.observed_files
+
+    def test_concurrent_file_creation(self):
+        """Test handling of files created concurrently."""
+        # Define a function to create files concurrently
+        def create_file(index):
+            file_path = os.path.join(self.monitor_dir, f"concurrent_{index}.mp4")
+            with open(file_path, 'w') as f:
+                f.write(f"Concurrent file {index} content")
+            return file_path
+
+        # Create 10 files concurrently
+        created_files = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            futures = [executor.submit(create_file, i) for i in range(10)]
+            for future in concurrent.futures.as_completed(futures):
+                created_files.append(future.result())
+
+        # Wait for files to be stable
+        time.sleep(MIN_FILE_AGE_SECONDS + 2)
+
+        # Start the monitor
+        self.file_monitor.start()
+
+        # Wait for processing - increased time for reliability
+        time.sleep(10)
+
+        # Stop the monitor
+        self.file_monitor.stop()
+
+        # Get the list of files that triggered callbacks
+        processed_files = [call[0][0] for call in self.mock_callback.call_args_list]
+
+        # Verify all files or most files were detected (might have timing issues)
+        # Integration tests should allow for some real-world conditions
+        detected_count = 0
+        for file_path in created_files:
+            if file_path in processed_files:
+                detected_count += 1
+
+        # At least 8 of 10 files should be detected (arbitrary threshold for integration test)
+        assert detected_count >= 8, f"Only {detected_count}/10 files were processed"
+
+        # Check that all created files are in observed_files
+        for file_path in created_files:
+            assert file_path in self.file_monitor.observed_files
+
+    def test_file_moved_to_directory(self):
+        """Test handling of a file that is moved into the monitored directory."""
+        # Create a temporary file outside the monitored directory
+        temp_dir = tempfile.TemporaryDirectory()
+        temp_file = os.path.join(temp_dir.name, "moved_file.mp4")
+        with open(temp_file, 'w') as f:
+            f.write("This file will be moved")
+
+        # Start the monitor
+        self.file_monitor.start()
+
+        # Wait a moment for the monitor to initialize
+        time.sleep(1)
+
+        # Move the file to the monitored directory
+        dest_file = os.path.join(self.monitor_dir, "moved_file.mp4")
+        shutil.move(temp_file, dest_file)
+
+        # Wait for file to be stable and processed
+        time.sleep(MIN_FILE_AGE_SECONDS + 3)
+
+        # Stop the monitor
+        self.file_monitor.stop()
+
+        # Clean up temporary directory
+        temp_dir.cleanup()
+
+        # Verify the moved file was detected
+        self.mock_callback.assert_called_once_with(dest_file)
+        assert dest_file in self.file_monitor.observed_files
+
+    def test_long_polling_stability(self):
+        """Test stability with a longer polling period."""
+        # Create a file monitor with a longer polling interval
+        long_poll_monitor = FileMonitor(
+            directory=self.monitor_dir,
+            file_patterns=["*.mp4"],
+            poll_interval=10,  # 10 seconds
+            logger=self.logger
+        )
+
+        try:
+            # Register a mock callback
+            mock_long_poll_callback = MagicMock()
+            long_poll_monitor.register_file_callback(mock_long_poll_callback)
+
+            # Start the monitor
+            long_poll_monitor.start()
+
+            # Create a file
+            test_file = os.path.join(self.monitor_dir, "long_poll_test.mp4")
+            with open(test_file, 'w') as f:
+                f.write("Test content for long polling")
+
+            # Wait for one polling cycle plus file stability time
+            time.sleep(15)
+
+            # Verify the file was detected
+            mock_long_poll_callback.assert_called_once_with(test_file)
+
+        finally:
+            # Stop the monitor
+            long_poll_monitor.stop()
