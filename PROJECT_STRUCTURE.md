@@ -23,10 +23,15 @@ meet2obsidian/
 │   │       └── component-template.md
 │   ├── dev/
 │   │   ├── README.md
-│   │   └── components/
-│   │       ├── API Key Management.md
-│   │       ├── API Key Security.md
-│   │       └── Logging.md
+│   │   ├── components/
+│   │   │   ├── API Key Management.md
+│   │   │   ├── API Key Security.md
+│   │   │   ├── CLI Architecture.md
+│   │   │   ├── CLI Testing.md
+│   │   │   └── Logging.md
+│   │   └── setup/
+│   │       ├── API Keys Setup.md
+│   │       └── Video Validation Tool.md
 │   ├── development.md
 │   ├── examples/
 │   │   ├── config-examples/
@@ -46,8 +51,10 @@ meet2obsidian/
 │       ├── README.md
 │       ├── getting-started/
 │       │   └── installation.md
+│       ├── troubleshooting/
+│       │   └── video-troubleshooting.md
 │       └── usage/
-│           ├── api-keys.md
+│           ├── api-keys-management.md
 │           ├── cli-commands.md
 │           └── logging.md
 ├── examples/
@@ -97,6 +104,7 @@ meet2obsidian/
 ├── tmp/
 │   ├── completed_epics_summary.md
 │   ├── config_implementation_fixes.md
+│   ├── epic12_cli_implementation_report.md
 │   ├── epic7_logging_tests_report.md
 │   ├── epic8_implementation_report.md
 │   ├── epic9_implementation_report.md
@@ -104,13 +112,20 @@ meet2obsidian/
 └── tests/
     ├── __init__.py
     ├── conftest.py
+    ├── data/
+    ├── fixtures/
+    │   └── test_config.json
     ├── integration/
     │   ├── __init__.py
+    │   ├── test_application_manager_integration.py
+    │   ├── test_cli_integration.py
     │   ├── test_pipeline.py
     │   └── test_security_integration.py
     ├── run_tests.py
     └── unit/
         ├── __init__.py
+        ├── test_application_manager.py
+        ├── test_application_manager_mock.py
         ├── test_cli.py
         ├── test_config.py
         ├── test_core.py
@@ -154,9 +169,14 @@ graph TD
     %% Dev docs
     DocsDev --> DocsDevReadme["README.md"]
     DocsDev --> DocsDevComponents["components/"]
+    DocsDev --> DocsDevSetup["setup/"]
     DocsDevComponents --> DocsDevComponentsAPIKey["API Key Management.md"]
     DocsDevComponents --> DocsDevComponentsAPIKeySecurity["API Key Security.md"]
     DocsDevComponents --> DocsDevComponentsLogging["Logging.md"]
+    DocsDevComponents --> DocsDevComponentsCLIArch["CLI Architecture.md"]
+    DocsDevComponents --> DocsDevComponentsCLITest["CLI Testing.md"]
+    DocsDevSetup --> DocsDevSetupAPIKeys["API Keys Setup.md"]
+    DocsDevSetup --> DocsDevSetupVideoVal["Video Validation Tool.md"]
 
     %% Examples
     DocsExamples --> DocsExamplesConfig["config-examples/"]
@@ -176,9 +196,11 @@ graph TD
     DocsUser --> DocsUserReadme["README.md"]
     DocsUser --> DocsUserGettingStarted["getting-started/"]
     DocsUserGettingStarted --> DocsUserGettingStartedInstall["installation.md"]
+    DocsUser --> DocsUserTroubleshooting["troubleshooting/"]
+    DocsUserTroubleshooting --> DocsUserTSVideo["video-troubleshooting.md"]
     DocsUser --> DocsUserUsage["usage/"]
     DocsUserUsage --> DocsUserUsageLogging["logging.md"]
-    DocsUserUsage --> DocsUserUsageAPIKeys["api-keys.md"]
+    DocsUserUsage --> DocsUserUsageAPIKeys["api-keys-management.md"]
     DocsUserUsage --> DocsUserUsageCLI["cli-commands.md"]
 
     %% Main Python package structure
@@ -235,12 +257,15 @@ graph TD
     TmpFiles --> TmpEpic7Report["epic7_logging_tests_report.md"]
     TmpFiles --> TmpEpic8Report["epic8_implementation_report.md"]
     TmpFiles --> TmpEpic9Report["epic9_implementation_report.md"]
+    TmpFiles --> TmpEpic12Report["epic12_cli_implementation_report.md"]
     TmpFiles --> TmpEpicsSummary["completed_epics_summary.md"]
 
     %% Tests
     Tests --> TestsInit["__init__.py"]
     Tests --> TestsConftest["conftest.py"]
     Tests --> TestsRunTests["run_tests.py"]
+    Tests --> TestsData["data/"]
+    Tests --> TestsFixtures["fixtures/"]
     Tests --> TestsIntegration["integration/"]
     Tests --> TestsUnit["unit/"]
 
@@ -248,6 +273,8 @@ graph TD
     TestsIntegration --> TestsIntegrationInit["__init__.py"]
     TestsIntegration --> TestsIntegrationPipeline["test_pipeline.py"]
     TestsIntegration --> TestsIntegrationSecurity["test_security_integration.py"]
+    TestsIntegration --> TestsIntegrationCLI["test_cli_integration.py"]
+    TestsIntegration --> TestsIntegrationAppManager["test_application_manager_integration.py"]
 
     %% Unit Tests
     TestsUnit --> TestsUnitInit["__init__.py"]
@@ -256,6 +283,11 @@ graph TD
     TestsUnit --> TestsUnitCore["test_core.py"]
     TestsUnit --> TestsUnitLogging["test_logging.py"]
     TestsUnit --> TestsUnitSecurity["test_security.py"]
+    TestsUnit --> TestsUnitAppManager["test_application_manager.py"]
+    TestsUnit --> TestsUnitAppManagerMock["test_application_manager_mock.py"]
+
+    %% Test Fixtures
+    TestsFixtures --> TestsFixturesConfig["test_config.json"]
 
     %% Configuration Files
     ConfigFiles --> ProjectToml["pyproject.toml"]
@@ -291,12 +323,15 @@ The project is in active development. Current status:
   - Process monitoring and control via ApplicationManager in core.py ✅ 
   - Complete CLI interface with command groups ✅
   - CLI commands for service management, status reporting, and configuration management ✅
+  - Utility scripts for video validation and API key management ✅
 
 - **Documentation**:
   - Comprehensive documentation for completed components
   - Developer docs for API Key Security and Logging components
   - User documentation for Logging and API Keys
   - CLI command documentation
+  - Video troubleshooting guide
+  - API Keys Setup guide
   - Internal developer docs available in `docs/internal_docs/`
   - API documentation in progress
 
@@ -306,6 +341,7 @@ The project is in active development. Current status:
   - Support for test markers and selective test execution ✅
   - Test-driven development approach being followed
   - Comprehensive CLI interface tests added ✅
+  - Comprehensive ApplicationManager tests added ✅
 
 - **Examples**:
   - Example of logging functionality
@@ -326,8 +362,13 @@ Key functional components:
   - `cli_commands/logs_command.py`: Log viewing and management ✅
   - `cli_commands/apikeys_command.py`: API key management ✅
   - `cli_commands/completion.py`: Shell completion for CLI commands ✅
+- **Utility Scripts**:
+  - `scripts/check_videos.py`: Video validation tool ✅
+  - `scripts/setup_api_keys.py`: API key setup utility ✅
+  - `scripts/setup_launchagent.sh`: LaunchAgent setup utility ✅
 
 ### Completed Epics:
+
 - **Epic 6**: Configuration module implementation ✅ (2025-05-12)
 - **Epic 7**: Tests for logging module ✅ (2025-05-12)
   - ✅ Task 1: Tests for logging configuration
@@ -369,5 +410,13 @@ Key functional components:
   - ✅ Task 6: Add shell completion support
   - ✅ Task 7: Add detailed error handling
   - ✅ Task 8: Enhance CLI with rich formatting
+- **Epic 13**: Tests for application manager ✅ (2025-05-12)
+  - ✅ Task 1: Create tests for application start/stop
+  - ✅ Task 2: Create tests for signal handling
+  - ✅ Task 3: Create tests for status retrieval
+  - ✅ Task 4: Create tests for component management
+  - ✅ Task 5: Create integration tests
+  - ✅ Task 6: Achieve high code coverage (97%)
+  - ✅ Task 7: Implement helper functions for tests
 
 Last Updated: 2025-05-12
