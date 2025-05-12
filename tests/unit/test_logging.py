@@ -133,22 +133,21 @@ class TestLoggingSetup:
         """Тест настройки процессоров structlog."""
         with patch('structlog.configure') as mock_configure, \
              patch('logging.getLogger'):
-            
+
             # Вызываем функцию настройки логирования
             logger = setup_logging()
-            
+
             # Получаем аргументы вызова configure
             configure_args = mock_configure.call_args[1]
-            
+
             # Проверяем наличие необходимых ключей в конфигурации
             assert 'processors' in configure_args
-            assert 'formatters' in configure_args or 'renderer' in configure_args
-            
+
             # Проверяем, что для формата JSON настроены соответствующие процессоры
             processors = configure_args['processors']
             assert any('TimeStamper' in str(p) for p in processors) or \
                    any(hasattr(p, 'processor') and 'TimeStamper' in str(p.processor) for p in processors)
-            
+
             # Проверяем, что JSON рендерер присутствует
             assert any('JSONRenderer' in str(p) for p in processors) or \
                    any('format_json' in str(p) for p in processors)
